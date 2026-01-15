@@ -4,7 +4,7 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
 import { cn } from '../lib/utils';
-import type { Player } from '../types';
+import type { Player, PlayerStats } from '../types';
 
 interface DashboardProps {
     player: Player;
@@ -16,16 +16,67 @@ export function HomePage({ player }: DashboardProps) {
 
     const myFriends = getFriendsOf(player.id);
 
-    // Sort players by win rate for ranking
-    const rankedPlayers = [...players].sort((a, b) => {
-        const rateA = a.stats.matchesPlayed > 0 ? a.stats.wins / a.stats.matchesPlayed : 0;
-        const rateB = b.stats.matchesPlayed > 0 ? b.stats.wins / b.stats.matchesPlayed : 0;
-        return rateB - rateA;
+    // DYNAMIC STATS CALCULATION
+    const playersWithDerivedStats = players.map(p => {
+        const myMatches = matches.filter(m =>
+            m.players.team1.includes(p.id) || m.players.team2.includes(p.id)
+        );
+
+        let wins = 0;
+        let draws = 0;
+        let losses = 0;
+        let goalsScored = 0;
+        let goalsConceded = 0;
+
+        myMatches.forEach(m => {
+            const isTeam1 = m.players.team1.includes(p.id);
+            const isTeam2 = m.players.team2.includes(p.id);
+            const myScore = isTeam1 ? m.score.team1 : m.score.team2;
+            const oppScore = isTeam1 ? m.score.team2 : m.score.team1;
+
+            goalsScored += myScore;
+            goalsConceded += oppScore;
+
+            if (m.endedBy === 'regular') {
+                if (myScore > oppScore) wins++;
+                else if (myScore < oppScore) losses++;
+                else draws++;
+            } else if (m.endedBy === 'penalties') {
+                const amIWinner = (isTeam1 && m.penaltyWinner === 1) || (isTeam2 && m.penaltyWinner === 2);
+                if (amIWinner) wins++; else losses++;
+            } else if (m.endedBy === 'forfeit') {
+                const amILoser = (isTeam1 && m.forfeitLoser === 1) || (isTeam2 && m.forfeitLoser === 2);
+                if (amILoser) losses++; else wins++;
+            }
+        });
+
+        const derivedStats: PlayerStats = {
+            matchesPlayed: myMatches.length,
+            wins,
+            draws,
+            losses,
+            goalsScored,
+            goalsConceded
+        };
+
+        return {
+            ...p,
+            derivedStats
+        };
     });
 
+    // Sort players by win rate for ranking
+    const rankedPlayers = [...playersWithDerivedStats].sort((a, b) => {
+        const rateA = a.derivedStats.matchesPlayed > 0 ? a.derivedStats.wins / a.derivedStats.matchesPlayed : 0;
+        const rateB = b.derivedStats.matchesPlayed > 0 ? b.derivedStats.wins / b.derivedStats.matchesPlayed : 0;
+        if (rateB !== rateA) return rateB - rateA;
+        return b.derivedStats.goalsScored - a.derivedStats.goalsScored; // Tie-breaker: goals
+    });
+
+    const currentPlayerWithStats = playersWithDerivedStats.find(p => p.id === player.id);
     const myRank = rankedPlayers.findIndex(p => p.id === player.id) + 1;
 
-    // Derive Social News (Mock/Simple logic based on data)
+    // Derive Social News
     const socialNews: any[] = [];
 
     // 1. New matches
@@ -44,8 +95,8 @@ export function HomePage({ player }: DashboardProps) {
         });
     });
 
-    // 2. Ranking changes (Simulated for now based on performance)
-    if (myRank <= 3) {
+    // 2. Ranking changes / Top status
+    if (myRank > 0 && myRank <= 3 && matches.length > 0) {
         socialNews.push({
             id: 'rank-top',
             type: 'rank',
@@ -56,12 +107,15 @@ export function HomePage({ player }: DashboardProps) {
     }
 
     // 3. Streaks or high scores
-    const topScorer = [...players].sort((a, b) => b.stats.goalsScored - a.stats.goalsScored)[0];
-    if (topScorer) {
+    const topScorer = [...playersWithDerivedStats]
+        .filter(p => p.derivedStats.goalsScored > 0)
+        .sort((a, b) => b.derivedStats.goalsScored - a.derivedStats.goalsScored)[0];
+
+    if (topScorer && matches.length > 0) {
         socialNews.push({
             id: 'top-scorer',
             type: 'milestone',
-            content: `${topScorer.name} es el máximo goleador con ${topScorer.stats.goalsScored} goles.`,
+            content: `${topScorer.name} es el máximo goleador con ${topScorer.derivedStats.goalsScored} goles.`,
             time: 'Novedad',
             icon: <Trophy className="w-4 h-4 text-accent" />
         });
@@ -77,7 +131,7 @@ export function HomePage({ player }: DashboardProps) {
                 </div>
                 <div className="bg-primary/10 border border-primary/20 px-3 py-1 rounded-full flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-primary" />
-                    <span className="font-bold text-primary font-mono italic">#{myRank}</span>
+                    <span className="font-bold text-primary font-mono italic">#{myRank || '-'}</span>
                 </div>
             </div>
 
@@ -128,14 +182,14 @@ export function HomePage({ player }: DashboardProps) {
                                     <div className="flex flex-col">
                                         <span className="font-bold text-sm">{p.name} {p.id === player.id && "(Tú)"}</span>
                                         <span className="text-[10px] text-gray-500 uppercase font-bold">
-                                            {p.stats.matchesPlayed > 0 ? Math.round((p.stats.wins / p.stats.matchesPlayed) * 100) : 0}% efectividad
+                                            {p.derivedStats.matchesPlayed > 0 ? Math.round((p.derivedStats.wins / p.derivedStats.matchesPlayed) * 100) : 0}% efectividad
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="block font-bold text-sm text-primary">{p.stats.wins}W</span>
-                                <span className="text-[10px] text-gray-500">{p.stats.matchesPlayed} partidas</span>
+                                <span className="block font-bold text-sm text-primary">{p.derivedStats.wins}W</span>
+                                <span className="text-[10px] text-gray-500">{p.derivedStats.matchesPlayed} partidas</span>
                             </div>
                         </Card>
                     ))}
@@ -146,12 +200,12 @@ export function HomePage({ player }: DashboardProps) {
             <div className="grid grid-cols-2 gap-3">
                 <Card glass className="p-4 border-primary/20 bg-primary/5">
                     <TrendingUp className="w-4 h-4 text-primary mb-2" />
-                    <span className="block text-2xl font-bold">{player.stats.goalsScored}</span>
+                    <span className="block text-2xl font-bold">{currentPlayerWithStats?.derivedStats.goalsScored || 0}</span>
                     <span className="text-[10px] text-gray-400 uppercase font-bold">Goles Anotados</span>
                 </Card>
                 <Card glass className="p-4 border-accent/20 bg-accent/5">
                     <Activity className="w-4 h-4 text-accent mb-2" />
-                    <span className="block text-2xl font-bold">{player.stats.matchesPlayed}</span>
+                    <span className="block text-2xl font-bold">{currentPlayerWithStats?.derivedStats.matchesPlayed || 0}</span>
                     <span className="text-[10px] text-gray-400 uppercase font-bold">Partidos Jugados</span>
                 </Card>
             </div>

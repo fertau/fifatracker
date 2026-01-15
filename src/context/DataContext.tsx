@@ -19,10 +19,12 @@ interface DataContextType {
     updateMatch: (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => Promise<void>;
     deleteMatch: (matchId: string) => Promise<void>;
     addPlayer: (name: string, avatar: string, photoURL?: string, pin?: string) => Promise<Player>;
+    updatePlayer: (playerId: string, updates: Partial<Player>) => Promise<void>;
     deletePlayer: (playerId: string) => Promise<void>;
     updatePlayerFriends: (hostId: string, friendId: string) => Promise<void>;
     removePlayerFriend: (hostId: string, friendId: string) => Promise<void>;
     getPlayer: (id: string) => Player | undefined;
+    recalculateAllStats: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -53,14 +55,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const cleanData = (data: any) => {
-        // Robust way to strip undefined fields for Firestore
         return JSON.parse(JSON.stringify(data));
     };
 
     const addPlayer = async (name: string, avatar: string, photoURL?: string, pin?: string) => {
         try {
-            console.log('🔵 Creating player:', { name, avatar, photoURL, pin: pin ? '****' : 'none' });
-
             const rawPlayer = {
                 name,
                 avatar,
@@ -71,12 +70,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 createdAt: Date.now(),
                 ownerId: auth.currentUser?.uid || 'anonymous'
             };
-
             const newPlayer = cleanData(rawPlayer);
             const docRef = await addDoc(collection(db, 'players'), newPlayer);
             return { id: docRef.id, ...newPlayer } as Player;
-        } catch (error: any) {
+        } catch (error) {
             console.error('❌ Error creating player:', error);
+            throw error;
+        }
+    };
+
+    const updatePlayer = async (playerId: string, updates: Partial<Player>) => {
+        try {
+            const playerRef = doc(db, 'players', playerId);
+            const cleanedUpdates = cleanData(updates);
+            await updateDoc(playerRef, cleanedUpdates);
+        } catch (error) {
+            console.error('❌ Error updating player:', error);
             throw error;
         }
     };
@@ -106,12 +115,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
             const hostRef = doc(db, 'players', hostId);
             const friendRef = doc(db, 'players', friendId);
-            await updateDoc(hostRef, {
-                friends: (await import('firebase/firestore')).arrayRemove(friendId)
-            });
-            await updateDoc(friendRef, {
-                friends: (await import('firebase/firestore')).arrayRemove(hostId)
-            });
+            const { arrayRemove } = await import('firebase/firestore');
+            await updateDoc(hostRef, { friends: arrayRemove(friendId) });
+            await updateDoc(friendRef, { friends: arrayRemove(hostId) });
         } catch (error) {
             console.error('❌ Error removing friend:', error);
             throw error;
@@ -121,58 +127,65 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const getPlayer = (id: string) => players.find(p => p.id === id);
 
     const updateStatsForPlayers = async (match: Match, reverse = false) => {
+        const { runTransaction, doc: firestoreDoc } = await import('firebase/firestore');
         const allPlayerIds = [...match.players.team1, ...match.players.team2];
         const uniqueIds = Array.from(new Set(allPlayerIds));
 
-        for (const playerId of uniqueIds) {
-            const player = players.find(p => p.id === playerId);
-            if (!player) continue;
+        try {
+            await runTransaction(db, async (transaction) => {
+                const playerDocs = await Promise.all(
+                    uniqueIds.map(id => transaction.get(firestoreDoc(db, 'players', id)))
+                );
 
-            const isTeam1 = match.players.team1.includes(playerId);
-            const isTeam2 = match.players.team2.includes(playerId);
-            const myScore = isTeam1 ? match.score.team1 : match.score.team2;
-            const opponentScore = isTeam1 ? match.score.team2 : match.score.team1;
+                for (const playerDoc of playerDocs) {
+                    if (!playerDoc.exists()) continue;
+                    const playerId = playerDoc.id;
+                    const playerData = playerDoc.data() as Player;
 
-            let result: 'win' | 'loss' | 'draw' = 'draw';
-            if (match.endedBy === 'regular') {
-                if (myScore > opponentScore) result = 'win';
-                if (myScore < opponentScore) result = 'loss';
-            } else if (match.endedBy === 'penalties') {
-                const amIWinner = (isTeam1 && match.penaltyWinner === 1) || (isTeam2 && match.penaltyWinner === 2);
-                result = amIWinner ? 'win' : 'loss';
-            } else if (match.endedBy === 'forfeit') {
-                const amILoser = (isTeam1 && match.forfeitLoser === 1) || (isTeam2 && match.forfeitLoser === 2);
-                result = amILoser ? 'loss' : 'win';
-            }
+                    const isTeam1 = match.players.team1.includes(playerId);
+                    const isTeam2 = match.players.team2.includes(playerId);
+                    const myScore = isTeam1 ? match.score.team1 : match.score.team2;
+                    const opponentScore = isTeam1 ? match.score.team2 : match.score.team1;
 
-            const factor = reverse ? -1 : 1;
-            const newStats = {
-                matchesPlayed: Math.max(0, player.stats.matchesPlayed + (1 * factor)),
-                wins: Math.max(0, player.stats.wins + ((result === 'win' ? 1 : 0) * factor)),
-                losses: Math.max(0, player.stats.losses + ((result === 'loss' ? 1 : 0) * factor)),
-                draws: Math.max(0, player.stats.draws + ((result === 'draw' ? 1 : 0) * factor)),
-                goalsScored: Math.max(0, player.stats.goalsScored + (myScore * factor)),
-                goalsConceded: Math.max(0, player.stats.goalsConceded + (opponentScore * factor))
-            };
+                    let result: 'win' | 'loss' | 'draw' = 'draw';
+                    if (match.endedBy === 'regular') {
+                        if (myScore > opponentScore) result = 'win';
+                        else if (myScore < opponentScore) result = 'loss';
+                    } else if (match.endedBy === 'penalties') {
+                        const amIWinner = (isTeam1 && match.penaltyWinner === 1) || (isTeam2 && match.penaltyWinner === 2);
+                        result = amIWinner ? 'win' : 'loss';
+                    } else if (match.endedBy === 'forfeit') {
+                        const amILoser = (isTeam1 && match.forfeitLoser === 1) || (isTeam2 && match.forfeitLoser === 2);
+                        result = amILoser ? 'loss' : 'win';
+                    }
 
-            const playerRef = doc(db, 'players', playerId);
-            await updateDoc(playerRef, { stats: newStats });
+                    const factor = reverse ? -1 : 1;
+                    const currentStats = playerData.stats || { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 };
+
+                    const newStats = {
+                        matchesPlayed: Math.max(0, currentStats.matchesPlayed + (1 * factor)),
+                        wins: Math.max(0, currentStats.wins + ((result === 'win' ? 1 : 0) * factor)),
+                        losses: Math.max(0, currentStats.losses + ((result === 'loss' ? 1 : 0) * factor)),
+                        draws: Math.max(0, currentStats.draws + ((result === 'draw' ? 1 : 0) * factor)),
+                        goalsScored: Math.max(0, currentStats.goalsScored + (myScore * factor)),
+                        goalsConceded: Math.max(0, currentStats.goalsConceded + (opponentScore * factor))
+                    };
+
+                    transaction.update(playerDoc.ref, { stats: newStats });
+                }
+            });
+        } catch (error) {
+            console.error('❌ Transaction failed:', error);
+            throw error;
         }
     };
 
     const addMatch = async (match: Match) => {
         try {
-            console.log('🔵 Saving match:', match);
             const { id, ...matchData } = match;
-
-            const cleanedData = cleanData(matchData);
-            console.log('🔵 Cleaned match data:', cleanedData);
-
-            const docRef = await addDoc(collection(db, 'matches'), cleanedData);
-            console.log('✅ Match saved with ID:', docRef.id);
-
+            await addDoc(collection(db, 'matches'), cleanData(matchData));
             await updateStatsForPlayers(match);
-        } catch (error: any) {
+        } catch (error) {
             console.error('❌ Error saving match:', error);
             throw error;
         }
@@ -180,27 +193,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const updateMatch = async (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => {
         try {
-            console.log('🔵 Updating match:', { oldMatch, updatedMatch, audit });
-
             // 1. Revert old stats
             await updateStatsForPlayers(oldMatch, true);
-            console.log('✅ Old stats reverted');
 
-            // 2. Prepare updated data with audit
+            // 2. Prepare updated data
             const history = oldMatch.edits || [];
             const newHistory = [...history, audit];
-
             const { id, ...matchData } = updatedMatch;
             const cleanedData = cleanData({ ...matchData, edits: newHistory });
 
             // 3. Save to Firestore
             await updateDoc(doc(db, 'matches', oldMatch.id), cleanedData);
-            console.log('✅ Match document updated in Firestore');
 
             // 4. Apply new stats
             await updateStatsForPlayers(updatedMatch);
-            console.log('✅ New stats applied');
-        } catch (error: any) {
+        } catch (error) {
             console.error('❌ Error updating match:', error);
             throw error;
         }
@@ -209,9 +216,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const deleteMatch = async (matchId: string) => {
         const matchToRemove = matches.find(m => m.id === matchId);
         if (!matchToRemove) return;
-
         await deleteDoc(doc(db, 'matches', matchId));
         await updateStatsForPlayers(matchToRemove, true);
+    };
+
+    const recalculateAllStats = async () => {
+        const { writeBatch, collection: fsCollection, getDocs } = await import('firebase/firestore');
+        const batch = writeBatch(db);
+
+        // Reset all player stats
+        const playersSnapshot = await getDocs(fsCollection(db, 'players'));
+
+        const resetStats = { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 };
+        playersSnapshot.docs.forEach(pDoc => {
+            batch.update(pDoc.ref, { stats: resetStats });
+        });
+        await batch.commit();
+
+        // Reload fresh players (optional but good practice)
+        // Now calculate from all matches
+        const matchesSnapshot = await getDocs(fsCollection(db, 'matches'));
+        const allMatches = matchesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
+
+        // We can't use transactions easily for ALL matches at once if too many, 
+        // but since this is a manual fix and we are doing it sequentially here:
+        for (const match of allMatches) {
+            await updateStatsForPlayers(match);
+        }
     };
 
     return (
@@ -223,10 +254,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updateMatch,
             deleteMatch,
             addPlayer,
+            updatePlayer,
             deletePlayer,
             updatePlayerFriends,
             removePlayerFriend,
-            getPlayer
+            getPlayer,
+            recalculateAllStats
         }}>
             {children}
         </DataContext.Provider>

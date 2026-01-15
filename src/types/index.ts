@@ -1,16 +1,19 @@
+export interface PlayerStats {
+    matchesPlayed: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    goalsScored: number;
+    goalsConceded: number;
+}
+
 export interface Player {
     id: string;
     name: string;
     avatar: string; // URL or emoji or local asset path
     photoURL?: string; // Firebase Storage URL for profile photo
-    stats: {
-        matchesPlayed: number;
-        wins: number;
-        draws: number;
-        losses: number;
-        goalsScored: number;
-        goalsConceded: number;
-    };
+    stats: PlayerStats;
+    derivedStats?: PlayerStats;
     friends: string[]; // List of Player IDs
     friendRequests?: string[]; // Array of player IDs who sent a request
     pin?: string; // Optional security PIN
