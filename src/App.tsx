@@ -13,6 +13,7 @@ import { TournamentDetails } from './pages/tournament/TournamentDetails';
 import { MatchHistory } from './pages/match/MatchHistory';
 import { FriendsList } from './pages/social/FriendsList';
 import { HomePage } from './pages/HomePage';
+import { StatsPage } from './pages/StatsPage';
 import type { Player } from './types';
 
 function MainApp() {
@@ -42,6 +43,7 @@ function MainApp() {
           } />
           <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
           <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
+          <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
           <Route path="/history" element={<MatchHistory />} />
           <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
           <Route path="/match/new" element={<NewMatch />} />

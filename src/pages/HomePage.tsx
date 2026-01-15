@@ -114,7 +114,12 @@ export function HomePage({ player }: HomePageProps) {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+                <Link to="/stats">
+                    <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5">
+                        <Trophy className="w-4 h-4 mr-2" /> STATS
+                    </Button>
+                </Link>
                 <Link to="/history">
                     <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5">
                         <History className="w-4 h-4 mr-2" /> HISTORIAL
