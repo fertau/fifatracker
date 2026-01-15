@@ -18,6 +18,7 @@ interface DataContextType {
     addMatch: (match: Match) => Promise<void>;
     deleteMatch: (matchId: string) => Promise<void>;
     addPlayer: (name: string, avatar: string, photoURL?: string) => Promise<Player>;
+    deletePlayer: (playerId: string) => Promise<void>;
     updatePlayerFriends: (hostId: string, friendId: string) => Promise<void>;
     getPlayer: (id: string) => Player | undefined;
 }
@@ -51,6 +52,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addPlayer = async (name: string, avatar: string, photoURL?: string) => {
         try {
+            console.log('🔵 Attempting to create player:', { name, avatar, photoURL });
+            console.log('🔵 Auth user:', auth.currentUser?.uid);
+
             const newPlayer = {
                 name,
                 avatar,
@@ -61,10 +65,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 ownerId: auth.currentUser?.uid || 'anonymous'
             };
 
+            console.log('🔵 Player data to save:', newPlayer);
             const docRef = await addDoc(collection(db, 'players'), newPlayer);
+            console.log('✅ Player created successfully with ID:', docRef.id);
             return { id: docRef.id, ...newPlayer } as Player;
+        } catch (error: any) {
+            console.error('❌ Error creating player:', error);
+            console.error('❌ Error code:', error?.code);
+            console.error('❌ Error message:', error?.message);
+            throw error;
+        }
+    };
+
+    const deletePlayer = async (playerId: string) => {
+        try {
+            console.log('🗑️ Deleting player:', playerId);
+            await deleteDoc(doc(db, 'players', playerId));
+            console.log('✅ Player deleted successfully');
         } catch (error) {
-            console.error('Error creating player:', error);
+            console.error('❌ Error deleting player:', error);
             throw error;
         }
     };
@@ -140,6 +159,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             addMatch,
             deleteMatch,
             addPlayer,
+            deletePlayer,
             updatePlayerFriends,
             getPlayer
         }}>

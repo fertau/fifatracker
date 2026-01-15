@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera } from 'lucide-react';
+import { Plus, Camera, Trash2 } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -12,7 +12,7 @@ interface ProfileSelectionProps {
 }
 
 export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
-    const { players, loading, createPlayer } = usePlayers();
+    const { players, loading, createPlayer, deletePlayer } = usePlayers();
     const [isCreating, setIsCreating] = useState(false);
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
     const [newName, setNewName] = useState('');
@@ -64,11 +64,22 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 <Card
                                     key={player.id}
                                     glass
-                                    className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6"
+                                    className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6 relative"
                                     onClick={() => onSelect(player)}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`¿Eliminar a ${player.name}?`)) {
+                                                deletePlayer(player.id);
+                                            }
+                                        }}
+                                        className="absolute top-2 right-2 p-1 rounded-lg bg-red-500/20 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/30"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                     {player.photoURL ? (
                                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/50 group-hover:border-primary transition-colors">
                                             <img src={player.photoURL} alt={player.name} className="w-full h-full object-cover" />

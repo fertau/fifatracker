@@ -1,7 +1,7 @@
 import { useData } from '../context/DataContext';
 
 export function usePlayers() {
-    const { players, addPlayer, updatePlayerFriends, getPlayer, addMatch } = useData();
+    const { players, addPlayer, deletePlayer, updatePlayerFriends, getPlayer, addMatch } = useData();
 
     const createPlayer = async (name: string, avatar: string, photoURL?: string) => {
         // Wrapper to match previous signature if needed, or update consumers
@@ -44,5 +44,5 @@ export function usePlayers() {
 
     const loading = false; // Placeholder
 
-    return { players, loading, createPlayer, saveMatch, addFriend, getFriendsOf };
+    return { players, loading, createPlayer, deletePlayer, saveMatch, addFriend, getFriendsOf };
 }
