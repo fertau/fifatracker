@@ -15,6 +15,13 @@ export interface Player {
     createdAt: number;
 }
 
+export interface AuditLogEntry {
+    userId: string;
+    userName: string;
+    timestamp: number;
+    changes: string; // Description of what changed
+}
+
 export interface Match {
     id: string;
     date: number;
@@ -31,6 +38,7 @@ export interface Match {
     penaltyWinner?: 1 | 2; // Team 1 or Team 2
     forfeitLoser?: 1 | 2; // Team 1 or Team 2
     tournamentId?: string;
+    edits?: AuditLogEntry[];
 }
 
 export interface Tournament {

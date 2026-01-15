@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Trophy, ArrowRight, Flag, AlertTriangle } from 'lucide-react';
+import { Users, Trophy, ArrowRight, Flag, AlertTriangle, Calendar } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useSession } from '../../context/SessionContext';
 import { Card } from '../../components/ui/Card';
@@ -28,6 +28,7 @@ export function NewMatch() {
     const [endedBy, setEndedBy] = useState<Match['endedBy']>('regular');
     const [penaltyWinner, setPenaltyWinner] = useState<1 | 2 | undefined>();
     const [forfeitLoser, setForfeitLoser] = useState<1 | 2 | undefined>();
+    const [matchDate, setMatchDate] = useState(new Date().toISOString().slice(0, 16));
 
     // Filter players based on active session
     const availablePlayers = isSessionActive && session
@@ -61,6 +62,8 @@ export function NewMatch() {
     const handleSave = async () => {
         try {
             if (saveMatch) {
+                // We'll update saveMatch or just use addMatch if possible, 
+                // but usePlayers wraps it. Let's update usePlayers.
                 await saveMatch(
                     gameType,
                     team1,
@@ -69,7 +72,8 @@ export function NewMatch() {
                     score2,
                     endedBy,
                     penaltyWinner,
-                    forfeitLoser
+                    forfeitLoser,
+                    new Date(matchDate).getTime()
                 );
             }
             navigate('/');
@@ -102,6 +106,19 @@ export function NewMatch() {
                     animate={{ opacity: 1, x: 0 }}
                     className="space-y-6"
                 >
+                    {/* Date Picker */}
+                    <div className="space-y-3">
+                        <h3 className="text-gray-400 font-bold flex items-center gap-2 text-sm uppercase">
+                            <Calendar className="w-4 h-4" /> Fecha del Partido
+                        </h3>
+                        <input
+                            type="datetime-local"
+                            className="w-full bg-surface border border-white/10 rounded-lg p-3 text-sm focus:border-primary outline-none"
+                            value={matchDate}
+                            onChange={(e) => setMatchDate(e.target.value)}
+                        />
+                    </div>
+
                     {/* Team 1 Selection */}
                     <div className="space-y-3">
                         <h3 className="text-neon-blue font-bold flex items-center gap-2 text-sm uppercase">

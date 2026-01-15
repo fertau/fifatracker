@@ -34,7 +34,7 @@ function MainApp() {
           <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
           <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
           <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
-          <Route path="/history" element={<MatchHistory />} />
+          <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
           <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
           <Route path="/match/new" element={<NewMatch />} />
           <Route path="/tournament/new" element={<NewTournament />} />

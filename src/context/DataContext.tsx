@@ -9,13 +9,14 @@ import {
     arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import type { Player, Match } from '../types';
+import type { Player, Match, AuditLogEntry } from '../types';
 
 interface DataContextType {
     players: Player[];
     matches: Match[];
     loading: boolean;
     addMatch: (match: Match) => Promise<void>;
+    updateMatch: (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => Promise<void>;
     deleteMatch: (matchId: string) => Promise<void>;
     addPlayer: (name: string, avatar: string, photoURL?: string) => Promise<Player>;
     deletePlayer: (playerId: string) => Promise<void>;
@@ -157,6 +158,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const updateMatch = async (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => {
+        try {
+            console.log('🔵 Updating match:', { oldMatch, updatedMatch, audit });
+
+            // 1. Revert old stats
+            await updateStatsForPlayers(oldMatch, true);
+            console.log('✅ Old stats reverted');
+
+            // 2. Prepare updated data with audit
+            const history = oldMatch.edits || [];
+            const newHistory = [...history, audit];
+
+            const { id, ...matchData } = updatedMatch;
+            const cleanedData = cleanData({ ...matchData, edits: newHistory });
+
+            // 3. Save to Firestore
+            await updateDoc(doc(db, 'matches', oldMatch.id), cleanedData);
+            console.log('✅ Match document updated in Firestore');
+
+            // 4. Apply new stats
+            await updateStatsForPlayers(updatedMatch);
+            console.log('✅ New stats applied');
+        } catch (error: any) {
+            console.error('❌ Error updating match:', error);
+            throw error;
+        }
+    };
+
     const deleteMatch = async (matchId: string) => {
         const matchToRemove = matches.find(m => m.id === matchId);
         if (!matchToRemove) return;
@@ -171,6 +200,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             matches,
             loading,
             addMatch,
+            updateMatch,
             deleteMatch,
             addPlayer,
             deletePlayer,
