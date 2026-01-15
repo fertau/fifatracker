@@ -5,7 +5,6 @@ import { usePlayers } from '../../hooks/usePlayers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PhotoCapture } from '../../components/PhotoCapture';
-import { useTheme } from '../../context/ThemeContext';
 import type { Player } from '../../types';
 
 interface ProfileSelectionProps {
@@ -19,13 +18,11 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const [newName, setNewName] = useState('');
     const [selectedAvatar, setSelectedAvatar] = useState('🦁');
     const [photoURL, setPhotoURL] = useState<string | undefined>();
-    const { setTheme } = useTheme();
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newName.trim()) return;
         const player = await createPlayer(newName, selectedAvatar, photoURL);
-        setTheme(player.themePreference);
         onSelect(player);
     };
 
@@ -62,10 +59,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     key={player.id}
                                     glass
                                     className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6"
-                                    onClick={() => {
-                                        setTheme(player.themePreference);
-                                        onSelect(player);
-                                    }}
+                                    onClick={() => onSelect(player)}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
