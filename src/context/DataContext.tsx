@@ -55,15 +55,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             console.log('🔵 Attempting to create player:', { name, avatar, photoURL });
             console.log('🔵 Auth user:', auth.currentUser?.uid);
 
-            const newPlayer = {
+            const newPlayer: any = {
                 name,
                 avatar,
-                photoURL,
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
                 createdAt: Date.now(),
                 ownerId: auth.currentUser?.uid || 'anonymous'
             };
+
+            if (photoURL !== undefined) {
+                newPlayer.photoURL = photoURL;
+            }
 
             console.log('🔵 Player data to save:', newPlayer);
             const docRef = await addDoc(collection(db, 'players'), newPlayer);
