@@ -59,19 +59,24 @@ export function NewMatch() {
     };
 
     const handleSave = async () => {
-        if (saveMatch) {
-            await saveMatch(
-                gameType,
-                team1,
-                team2,
-                score1,
-                score2,
-                endedBy,
-                penaltyWinner,
-                forfeitLoser
-            );
+        try {
+            if (saveMatch) {
+                await saveMatch(
+                    gameType,
+                    team1,
+                    team2,
+                    score1,
+                    score2,
+                    endedBy,
+                    penaltyWinner,
+                    forfeitLoser
+                );
+            }
+            navigate('/');
+        } catch (error) {
+            console.error('Error saving match:', error);
+            alert('Error al guardar el partido. Verifica tu conexión e intenta de nuevo.');
         }
-        navigate('/');
     };
 
     return (

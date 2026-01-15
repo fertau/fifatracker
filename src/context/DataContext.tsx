@@ -141,9 +141,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const addMatch = async (match: Match) => {
-        const { id, ...matchData } = match;
-        await addDoc(collection(db, 'matches'), matchData);
-        await updateStatsForPlayers(match);
+        try {
+            console.log('🔵 Attempting to save match:', match);
+            const { id, ...matchData } = match;
+
+            // Clean undefined fields for Firestore
+            const cleanedData: any = { ...matchData };
+            if (cleanedData.penaltyWinner === undefined) delete cleanedData.penaltyWinner;
+            if (cleanedData.forfeitLoser === undefined) delete cleanedData.forfeitLoser;
+            if (cleanedData.tournamentId === undefined) delete cleanedData.tournamentId;
+
+            console.log('🔵 Cleaned match data:', cleanedData);
+            const docRef = await addDoc(collection(db, 'matches'), cleanedData);
+            console.log('✅ Match saved successfully with ID:', docRef.id);
+
+            await updateStatsForPlayers(match);
+            console.log('✅ Player stats updated');
+        } catch (error: any) {
+            console.error('❌ Error saving match:', error);
+            console.error('❌ Error code:', error?.code);
+            console.error('❌ Error message:', error?.message);
+            throw error;
+        }
     };
 
     const deleteMatch = async (matchId: string) => {
