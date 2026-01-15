@@ -17,7 +17,7 @@ interface DataContextType {
     loading: boolean;
     addMatch: (match: Match) => Promise<void>;
     deleteMatch: (matchId: string) => Promise<void>;
-    addPlayer: (name: string, avatar: string) => Promise<Player>;
+    addPlayer: (name: string, avatar: string, photoURL?: string) => Promise<Player>;
     updatePlayerFriends: (hostId: string, friendId: string) => Promise<void>;
     getPlayer: (id: string) => Player | undefined;
 }
@@ -49,10 +49,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
-    const addPlayer = async (name: string, avatar: string) => {
+    const addPlayer = async (name: string, avatar: string, photoURL?: string) => {
         const newPlayer = {
             name,
             avatar,
+            photoURL,
             themePreference: 'fifa',
             stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
             friends: [],

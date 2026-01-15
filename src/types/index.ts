@@ -2,6 +2,7 @@ export interface Player {
     id: string;
     name: string;
     avatar: string; // URL or emoji or local asset path
+    photoURL?: string; // Firebase Storage URL for profile photo
     themePreference: 'fifa' | 'cyberpunk' | 'retro';
     stats: {
         matchesPlayed: number;
