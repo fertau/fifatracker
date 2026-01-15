@@ -22,8 +22,14 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newName.trim()) return;
-        const player = await createPlayer(newName, selectedAvatar, photoURL);
-        onSelect(player);
+
+        try {
+            const player = await createPlayer(newName, selectedAvatar, photoURL);
+            onSelect(player);
+        } catch (error) {
+            console.error('Error creating player:', error);
+            alert('Error al crear el jugador. Por favor verifica tu conexión e intenta de nuevo.');
+        }
     };
 
     const handlePhotoSelected = (url: string) => {

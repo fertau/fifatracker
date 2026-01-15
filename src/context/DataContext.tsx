@@ -50,19 +50,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const addPlayer = async (name: string, avatar: string, photoURL?: string) => {
-        const newPlayer = {
-            name,
-            avatar,
-            photoURL,
-            themePreference: 'fifa',
-            stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
-            friends: [],
-            createdAt: Date.now(),
-            ownerId: auth.currentUser?.uid || 'anonymous'
-        };
+        try {
+            const newPlayer = {
+                name,
+                avatar,
+                photoURL,
+                stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
+                friends: [],
+                createdAt: Date.now(),
+                ownerId: auth.currentUser?.uid || 'anonymous'
+            };
 
-        const docRef = await addDoc(collection(db, 'players'), newPlayer);
-        return { id: docRef.id, ...newPlayer } as Player;
+            const docRef = await addDoc(collection(db, 'players'), newPlayer);
+            return { id: docRef.id, ...newPlayer } as Player;
+        } catch (error) {
+            console.error('Error creating player:', error);
+            throw error;
+        }
     };
 
     const updatePlayerFriends = async (hostId: string, friendId: string) => {
