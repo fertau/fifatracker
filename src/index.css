@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default (FIFA Ultimate) */
+    --color-primary: 0 243 255;
+    /* Neon Blue */
+    --color-secondary: 0 255 157;
+    /* Neon Green */
+    --color-accent: 176 38 255;
+    /* Neon Purple */
+    --color-background: 10 10 18;
+    /* Dark Blue-Black */
+    --color-surface: 21 21 30;
+    /* Slightly lighter */
+    --font-heading: 'Rajdhani', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+  }
+
+  [data-theme='cyberpunk'] {
+    --color-primary: 255 0 60;
+    /* Neon Red */
+    --color-secondary: 251 255 0;
+    /* Neon Yellow */
+    --color-accent: 0 240 255;
+    /* Cyan */
+    --color-background: 5 0 10;
+    /* Deep Purple Black */
+    --color-surface: 20 5 25;
+    --font-heading: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+  }
+
+  [data-theme='retro'] {
+    --color-primary: 255 165 0;
+    /* Orange */
+    --color-secondary: 50 205 50;
+    /* Lime */
+    --color-accent: 255 0 255;
+    /* Magenta */
+    --color-background: 30 30 30;
+    /* Gray */
+    --color-surface: 0 0 0;
+    /* Black */
+    --font-heading: '"Press Start 2P"', cursive;
+    --font-body: 'VT323', monospace;
+    /* Need to import VT323 if used, or fallback */
+  }
+
+  body {
+    @apply bg-background text-white antialiased transition-colors duration-500;
+    font-family: var(--font-body);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .text-neon {
+    text-shadow: 0 0 5px rgb(var(--color-primary)), 0 0 10px rgb(var(--color-primary));
+  }
+
+  .box-glow {
+    box-shadow: 0 0 10px rgb(var(--color-primary) / 0.3);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(var(--color-background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-surface));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary) / 0.5);
+}
