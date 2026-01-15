@@ -36,17 +36,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Initial Load & Realtime Sync
     useEffect(() => {
+        let playersLoaded = false;
+        let matchesLoaded = false;
+
+        const checkLoading = () => {
+            if (playersLoaded && matchesLoaded) {
+                setLoading(false);
+            }
+        };
+
         const unsubscribePlayers = onSnapshot(collection(db, 'players'), (snapshot) => {
             const loadedPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Player));
             setPlayers(loadedPlayers);
+            playersLoaded = true;
+            checkLoading();
         });
 
         const unsubscribeMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
             const loadedMatches = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
             setMatches(loadedMatches);
+            matchesLoaded = true;
+            checkLoading();
         });
-
-        setLoading(false);
 
         return () => {
             unsubscribePlayers();

@@ -15,11 +15,24 @@ import { HomePage } from './pages/HomePage';
 import { StatsPage } from './pages/StatsPage';
 import { PlayMenu } from './pages/PlayMenu';
 import { ProfilePage } from './pages/profile/ProfilePage';
+import { SplashScreen } from './components/layout/SplashScreen';
+import { AnimatePresence } from 'framer-motion';
 import type { Player } from './types';
+import { DataProvider, useData } from './context/DataContext';
+import { AuthProvider } from './context/AuthContext';
 
 function MainApp() {
   const { players, loading } = useData();
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Splash Screen timer (2 seconds)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Load from persistence
   useEffect(() => {
@@ -34,12 +47,16 @@ function MainApp() {
 
   // Save to persistence
   useEffect(() => {
+    // CRITICAL: Don't touch localStorage while initial data is still loading
+    // to avoid clearing the saved session before restoration
+    if (loading) return;
+
     if (currentPlayer) {
       localStorage.setItem('fifa_tracker_current_player_id', currentPlayer.id);
     } else {
       localStorage.removeItem('fifa_tracker_current_player_id');
     }
-  }, [currentPlayer]);
+  }, [currentPlayer, loading]);
 
   // Keep current player synced with DB
   useEffect(() => {
@@ -51,40 +68,47 @@ function MainApp() {
     }
   }, [players]);
 
-  if (loading && !currentPlayer) {
-    return <div className="h-screen flex items-center justify-center bg-background text-primary animate-pulse uppercase font-bold tracking-widest">Iniciando...</div>;
-  }
-
-  if (!currentPlayer) {
-    return <ProfileSelection onSelect={setCurrentPlayer} />;
-  }
-
   return (
-    <BrowserRouter>
-      <Layout player={currentPlayer}>
-        <Routes>
-          <Route path="/" element={<HomePage player={currentPlayer} />} />
-          <Route path="/play" element={<PlayMenu />} />
-          <Route path="/profile" element={
-            <ProfilePage player={currentPlayer} onLogout={() => setCurrentPlayer(null)} />
-          } />
-          <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
-          <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
-          <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
-          <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
-          <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
-          <Route path="/match/new" element={<NewMatch />} />
-          <Route path="/tournament/new" element={<NewTournament />} />
-          <Route path="/tournament/:id" element={<TournamentDetails />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <>
+      <AnimatePresence>
+        {showSplash && <SplashScreen />}
+      </AnimatePresence>
+
+      {!showSplash && (
+        <>
+          {loading && !currentPlayer ? (
+            <div className="h-screen flex items-center justify-center bg-background text-primary animate-pulse uppercase font-bold tracking-widest">
+              Sincronizando...
+            </div>
+          ) : !currentPlayer ? (
+            <ProfileSelection onSelect={setCurrentPlayer} />
+          ) : (
+            <BrowserRouter>
+              <Layout player={currentPlayer}>
+                <Routes>
+                  <Route path="/" element={<HomePage player={currentPlayer} />} />
+                  <Route path="/play" element={<PlayMenu />} />
+                  <Route path="/profile" element={
+                    <ProfilePage player={currentPlayer} onLogout={() => setCurrentPlayer(null)} />
+                  } />
+                  <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
+                  <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
+                  <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
+                  <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
+                  <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
+                  <Route path="/match/new" element={<NewMatch />} />
+                  <Route path="/tournament/new" element={<NewTournament />} />
+                  <Route path="/tournament/:id" element={<TournamentDetails />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            </BrowserRouter>
+          )}
+        </>
+      )}
+    </>
   );
 }
-
-import { DataProvider, useData } from './context/DataContext';
-import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
