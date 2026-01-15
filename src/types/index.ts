@@ -12,6 +12,8 @@ export interface Player {
         goalsConceded: number;
     };
     friends: string[]; // List of Player IDs
+    friendRequests?: string[]; // Array of player IDs who sent a request
+    ownerId: string;
     createdAt: number;
 }
 

@@ -13,8 +13,8 @@ interface LayoutProps {
 export const Layout = ({ children, player }: LayoutProps) => {
     const location = useLocation();
 
-    // Placeholder for friend requests
-    const hasNotifications = false;
+    // Real notification check
+    const hasFriendRequests = player.friendRequests && player.friendRequests.length > 0;
 
     return (
         <div className="min-h-screen pb-20 bg-background text-white transition-colors duration-500 font-body overflow-x-hidden">
@@ -38,7 +38,7 @@ export const Layout = ({ children, player }: LayoutProps) => {
                                 {player.avatar}
                             </div>
                         )}
-                        {hasNotifications && (
+                        {hasFriendRequests && (
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-background rounded-full animate-bounce" />
                         )}
                     </Link>
