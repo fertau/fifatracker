@@ -50,41 +50,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
+    const cleanData = (data: any) => {
+        // Robust way to strip undefined fields for Firestore
+        return JSON.parse(JSON.stringify(data));
+    };
+
     const addPlayer = async (name: string, avatar: string, photoURL?: string) => {
         try {
-            console.log('🔵 Attempting to create player:', { name, avatar, photoURL });
-            console.log('🔵 Auth user:', auth.currentUser?.uid);
+            console.log('🔵 Creating player:', { name, avatar, photoURL });
 
-            const newPlayer: any = {
+            const rawPlayer = {
                 name,
                 avatar,
+                photoURL,
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
                 createdAt: Date.now(),
                 ownerId: auth.currentUser?.uid || 'anonymous'
             };
 
-            if (photoURL !== undefined) {
-                newPlayer.photoURL = photoURL;
-            }
+            const newPlayer = cleanData(rawPlayer);
+            console.log('🔵 Cleaned player data:', newPlayer);
 
-            console.log('🔵 Player data to save:', newPlayer);
             const docRef = await addDoc(collection(db, 'players'), newPlayer);
-            console.log('✅ Player created successfully with ID:', docRef.id);
+            console.log('✅ Player created with ID:', docRef.id);
             return { id: docRef.id, ...newPlayer } as Player;
         } catch (error: any) {
             console.error('❌ Error creating player:', error);
-            console.error('❌ Error code:', error?.code);
-            console.error('❌ Error message:', error?.message);
             throw error;
         }
     };
 
     const deletePlayer = async (playerId: string) => {
         try {
-            console.log('🗑️ Deleting player:', playerId);
             await deleteDoc(doc(db, 'players', playerId));
-            console.log('✅ Player deleted successfully');
         } catch (error) {
             console.error('❌ Error deleting player:', error);
             throw error;
@@ -142,25 +141,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addMatch = async (match: Match) => {
         try {
-            console.log('🔵 Attempting to save match:', match);
+            console.log('🔵 Saving match:', match);
             const { id, ...matchData } = match;
 
-            // Clean undefined fields for Firestore
-            const cleanedData: any = { ...matchData };
-            if (cleanedData.penaltyWinner === undefined) delete cleanedData.penaltyWinner;
-            if (cleanedData.forfeitLoser === undefined) delete cleanedData.forfeitLoser;
-            if (cleanedData.tournamentId === undefined) delete cleanedData.tournamentId;
-
+            const cleanedData = cleanData(matchData);
             console.log('🔵 Cleaned match data:', cleanedData);
+
             const docRef = await addDoc(collection(db, 'matches'), cleanedData);
-            console.log('✅ Match saved successfully with ID:', docRef.id);
+            console.log('✅ Match saved with ID:', docRef.id);
 
             await updateStatsForPlayers(match);
-            console.log('✅ Player stats updated');
         } catch (error: any) {
             console.error('❌ Error saving match:', error);
-            console.error('❌ Error code:', error?.code);
-            console.error('❌ Error message:', error?.message);
             throw error;
         }
     };
