@@ -13,6 +13,7 @@ import { MatchHistory } from './pages/match/MatchHistory';
 import { FriendsList } from './pages/social/FriendsList';
 import { HomePage } from './pages/HomePage';
 import { StatsPage } from './pages/StatsPage';
+import { PlayMenu } from './pages/PlayMenu';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import type { Player } from './types';
 
@@ -25,9 +26,10 @@ function MainApp() {
 
   return (
     <BrowserRouter>
-      <Layout>
+      <Layout player={currentPlayer}>
         <Routes>
           <Route path="/" element={<HomePage player={currentPlayer} />} />
+          <Route path="/play" element={<PlayMenu />} />
           <Route path="/profile" element={
             <ProfilePage player={currentPlayer} onLogout={() => setCurrentPlayer(null)} />
           } />

@@ -1,158 +1,169 @@
 import { Link } from 'react-router-dom';
-import { Play, Trophy, Users, UserPlus, History } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
-import { useSession } from '../context/SessionContext';
+import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { cn } from '../lib/utils';
 import type { Player } from '../types';
 
-interface HomePageProps {
+interface DashboardProps {
     player: Player;
 }
 
-export function HomePage({ player }: HomePageProps) {
-    const { isSessionActive, session, endSession } = useSession();
-    const { getFriendsOf } = usePlayers();
+export function HomePage({ player }: DashboardProps) {
+    const { players, getFriendsOf } = usePlayers();
+    const { matches } = useData();
 
     const myFriends = getFriendsOf(player.id);
-    const recentFriends = myFriends.slice(0, 4); // Show top 4 friends
+
+    // Sort players by win rate for ranking
+    const rankedPlayers = [...players].sort((a, b) => {
+        const rateA = a.stats.matchesPlayed > 0 ? a.stats.wins / a.stats.matchesPlayed : 0;
+        const rateB = b.stats.matchesPlayed > 0 ? b.stats.wins / b.stats.matchesPlayed : 0;
+        return rateB - rateA;
+    });
+
+    const myRank = rankedPlayers.findIndex(p => p.id === player.id) + 1;
+
+    // Derive Social News (Mock/Simple logic based on data)
+    const socialNews: any[] = [];
+
+    // 1. New matches
+    const recentMatches = [...matches].sort((a, b) => b.date - a.date).slice(0, 3);
+    recentMatches.forEach(m => {
+        socialNews.push({
+            id: `match-${m.id}`,
+            type: 'match',
+            content: `Partido registrado: ${m.score.team1} - ${m.score.team2}`,
+            time: new Date(m.date).toLocaleDateString(),
+            icon: <Activity className="w-4 h-4 text-primary" />
+        });
+    });
+
+    // 2. Ranking changes (Simulated for now based on performance)
+    if (myRank <= 3) {
+        socialNews.push({
+            id: 'rank-top',
+            type: 'rank',
+            content: `¡Estás en el TOP 3 del ranking! Mantén el nivel.`,
+            time: 'Hoy',
+            icon: <Star className="w-4 h-4 text-yellow-500" />
+        });
+    }
+
+    // 3. Streaks or high scores
+    const topScorer = [...players].sort((a, b) => b.stats.goalsScored - a.stats.goalsScored)[0];
+    if (topScorer) {
+        socialNews.push({
+            id: 'top-scorer',
+            type: 'milestone',
+            content: `${topScorer.name} es el máximo goleador con ${topScorer.stats.goalsScored} goles.`,
+            time: 'Novedad',
+            icon: <Trophy className="w-4 h-4 text-accent" />
+        });
+    }
 
     return (
-        <div className="space-y-6">
-            {/* Welcome Card */}
-            <Card className="text-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="flex items-center justify-center gap-3 mb-2">
-                    {player.photoURL ? (
-                        <img src={player.photoURL} alt={player.name} className="w-12 h-12 rounded-full border-2 border-primary/50" />
-                    ) : (
-                        <span className="text-4xl">{player.avatar}</span>
-                    )}
-                    <h2 className="text-3xl font-bold">Hola, {player.name}</h2>
+        <div className="space-y-6 pb-10 animate-in fade-in duration-500">
+            {/* Main Header / Dashboard Info */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold font-heading tracking-tighter uppercase">Dashboard</h2>
+                    <p className="text-sm text-gray-500 uppercase tracking-widest font-bold">Tu progreso social</p>
                 </div>
+                <div className="bg-primary/10 border border-primary/20 px-3 py-1 rounded-full flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-primary" />
+                    <span className="font-bold text-primary font-mono italic">#{myRank}</span>
+                </div>
+            </div>
 
-                {!isSessionActive ? (
-                    <div className="space-y-4">
-                        <p className="text-gray-400 mb-2">¿Estás con amigos?</p>
-                        <Link to="/session/new">
-                            <Button size="lg" glow className="w-full animate-pulse">
-                                <Play className="w-5 h-5 fill-current" /> INICIAR SESIÓN
-                            </Button>
-                        </Link>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-center gap-2 text-primary font-bold bg-primary/10 py-1 rounded-full text-xs uppercase tracking-widest border border-primary/20">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            Sesión Activa ({session?.playersPresent.length} jugadores)
-                        </div>
+            {/* Social News Feed */}
+            <section className="space-y-3">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp className="w-3 h-3" /> Novedades Sociales
+                </h3>
+                <div className="space-y-3">
+                    {socialNews.length > 0 ? socialNews.map(news => (
+                        <Card key={news.id} glass={false} className="p-3 border-white/5 bg-white/[0.02]">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-lg bg-white/5 border border-white/10 mt-1">
+                                    {news.icon}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-200">{news.content}</p>
+                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">{news.time}</span>
+                                </div>
+                                {news.type === 'rank' && <ArrowUpRight className="w-4 h-4 text-green-500" />}
+                            </div>
+                        </Card>
+                    )) : (
+                        <p className="text-center py-4 text-gray-500 text-xs italic">No hay novedades recientes por ahora.</p>
+                    )}
+                </div>
+            </section>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <Link to="/match/new">
-                                <Button size="md" glow className="w-full">
-                                    PARTIDO RÁPIDO
-                                </Button>
-                            </Link>
-                            <Link to="/tournament/new">
-                                <Button size="md" variant="secondary" className="w-full">
-                                    <Trophy className="w-4 h-4" /> NUEVO TORNEO
-                                </Button>
-                            </Link>
-                        </div>
-
-                        <div className="flex justify-between items-center px-2">
-                            <Link to="/session/manage" className="text-xs text-primary hover:text-primary/80 underline decoration-primary/50">
-                                Gestionar Jugadores
-                            </Link>
-                            <button onClick={endSession} className="text-xs text-red-400 hover:text-red-300 underline decoration-red-400/50">
-                                Finalizar Sesión
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </Card>
-
-            {/* Friends Section - HIGHLIGHTED */}
-            <Card className="relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-accent" />
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5 text-primary" />
-                        <h3 className="font-bold text-lg">Mis Amigos</h3>
-                    </div>
-                    <Link to="/friends" className="text-xs text-primary hover:text-primary/80">
-                        Ver todos ({myFriends.length})
+            {/* Featured Ranking */}
+            <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Star className="w-3 h-3 text-yellow-500" /> Top Jugadores
+                    </h3>
+                    <Link to="/stats" className="text-[10px] text-primary hover:underline uppercase font-bold tracking-widest">
+                        Ver Rankings Completos
                     </Link>
                 </div>
-
-                {recentFriends.length > 0 ? (
-                    <div className="grid grid-cols-4 gap-3 mb-4">
-                        {recentFriends.map(friend => (
-                            <div key={friend.id} className="flex flex-col items-center gap-1">
-                                {friend.photoURL ? (
-                                    <img src={friend.photoURL} alt={friend.name} className="w-12 h-12 rounded-full border-2 border-white/10" />
-                                ) : (
-                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl border-2 border-white/10">
-                                        {friend.avatar}
+                <div className="space-y-2">
+                    {rankedPlayers.slice(0, 3).map((p, idx) => (
+                        <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>
+                            <div className="flex items-center gap-4">
+                                <span className={cn("font-bold text-xl italic font-mono w-6", idx === 0 ? "text-yellow-500" : "text-gray-400")}>
+                                    {idx + 1}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl">{p.avatar}</span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-sm">{p.name} {p.id === player.id && "(Tú)"}</span>
+                                        <span className="text-[10px] text-gray-500 uppercase font-bold">
+                                            {p.stats.matchesPlayed > 0 ? Math.round((p.stats.wins / p.stats.matchesPlayed) * 100) : 0}% efectividad
+                                        </span>
                                     </div>
-                                )}
-                                <span className="text-[10px] text-gray-400 truncate w-full text-center">{friend.name}</span>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-6 text-gray-500">
-                        <p className="text-sm mb-3">Aún no tienes amigos agregados</p>
-                    </div>
-                )}
+                            <div className="text-right">
+                                <span className="block font-bold text-sm text-primary">{p.stats.wins}W</span>
+                                <span className="text-[10px] text-gray-500">{p.stats.matchesPlayed} partidas</span>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            </section>
 
-                <Link to="/friends">
-                    <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5">
-                        <UserPlus className="w-4 h-4 mr-2" /> INVITAR AMIGOS
-                    </Button>
-                </Link>
-            </Card>
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-3 gap-3">
-                <Link to="/stats">
-                    <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5">
-                        <Trophy className="w-4 h-4 mr-2" /> STATS
-                    </Button>
-                </Link>
-                <Link to="/history">
-                    <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5">
-                        <History className="w-4 h-4 mr-2" /> HISTORIAL
-                    </Button>
-                </Link>
-                <Link to="/friends">
-                    <Button variant="ghost" className="w-full border border-white/10 hover:bg-white/5">
-                        <Users className="w-4 h-4 mr-2" /> AMIGOS
-                    </Button>
-                </Link>
+            {/* My Stats Preview */}
+            <div className="grid grid-cols-2 gap-3">
+                <Card glass className="p-4 border-primary/20 bg-primary/5">
+                    <TrendingUp className="w-4 h-4 text-primary mb-2" />
+                    <span className="block text-2xl font-bold">{player.stats.goalsScored}</span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold">Goles Anotados</span>
+                </Card>
+                <Card glass className="p-4 border-accent/20 bg-accent/5">
+                    <Activity className="w-4 h-4 text-accent mb-2" />
+                    <span className="block text-2xl font-bold">{player.stats.matchesPlayed}</span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold">Partidos Jugados</span>
+                </Card>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
-                <Card glass className="p-4 flex flex-col items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-primary">{player.stats.matchesPlayed}</span>
-                    <span className="text-xs text-gray-400 uppercase">Partidos</span>
+            {/* Quick Access to Social */}
+            <Link to="/friends">
+                <Card className="p-4 flex items-center justify-between border-white/10 hover:border-primary transition-all">
+                    <div className="flex items-center gap-3">
+                        <Users className="w-5 h-5 text-primary" />
+                        <div>
+                            <p className="font-bold text-sm">Mis Amigos</p>
+                            <p className="text-[10px] text-gray-500 uppercase">Tienes {myFriends.length} amigos</p>
+                        </div>
+                    </div>
                 </Card>
-                <Card glass className="p-4 flex flex-col items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-accent">{player.stats.wins}</span>
-                    <span className="text-xs text-gray-400 uppercase">Victorias</span>
-                </Card>
-                <Card glass className="p-4 flex flex-col items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-neon-blue">{player.stats.goalsScored}</span>
-                    <span className="text-xs text-gray-400 uppercase">Goles</span>
-                </Card>
-                <Card glass className="p-4 flex flex-col items-center justify-center gap-2">
-                    <span className="text-4xl font-bold text-white">
-                        {player.stats.matchesPlayed > 0 ? Math.round((player.stats.wins / player.stats.matchesPlayed) * 100) : 0}%
-                    </span>
-                    <span className="text-xs text-gray-400 uppercase">Efectividad</span>
-                </Card>
-            </div>
+            </Link>
         </div>
     );
 }
