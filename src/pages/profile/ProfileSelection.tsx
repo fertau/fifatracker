@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, Trash2 } from 'lucide-react';
+import { Plus, Camera, Trash2, Lock } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -16,19 +16,38 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const [isCreating, setIsCreating] = useState(false);
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
     const [newName, setNewName] = useState('');
+    const [newPin, setNewPin] = useState('');
     const [selectedAvatar, setSelectedAvatar] = useState('🦁');
     const [photoURL, setPhotoURL] = useState<string | undefined>();
+
+    // Login flow
+    const [selectedPlayerForLogin, setSelectedPlayerForLogin] = useState<Player | null>(null);
+    const [loginPin, setLoginPin] = useState('');
+    const [loginError, setLoginError] = useState(false);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newName.trim()) return;
 
         try {
-            const player = await createPlayer(newName, selectedAvatar, photoURL);
+            const player = await createPlayer(newName, selectedAvatar, photoURL, newPin || undefined);
             onSelect(player);
         } catch (error) {
             console.error('Error creating player:', error);
             alert('Error al crear el jugador. Por favor verifica tu conexión e intenta de nuevo.');
+        }
+    };
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedPlayerForLogin) return;
+
+        if (!selectedPlayerForLogin.pin || selectedPlayerForLogin.pin === loginPin) {
+            onSelect(selectedPlayerForLogin);
+        } else {
+            setLoginError(true);
+            setLoginPin('');
+            setTimeout(() => setLoginError(false), 2000);
         }
     };
 
@@ -39,12 +58,65 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
 
     const AVATARS = ['🦁', '🚀', '🦖', '⚽', '🎮', '🔥', '💎', '👻'];
 
-    if (loading) return <div className="flex h-screen items-center justify-center text-primary animate-pulse">Cargando Jugadores...</div>;
+    if (loading) return <div className="flex h-screen items-center justify-center text-primary animate-pulse uppercase font-bold tracking-widest">Cargando Jugadores...</div>;
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
             <AnimatePresence mode="wait">
-                {!isCreating ? (
+                {selectedPlayerForLogin ? (
+                    <motion.div
+                        key="login"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="w-full max-w-sm"
+                    >
+                        <Card className="text-center space-y-6 p-8 border-primary/30">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary shadow-[0_0_20px_rgba(var(--color-primary),0.3)]">
+                                    {selectedPlayerForLogin.photoURL ? (
+                                        <img src={selectedPlayerForLogin.photoURL} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl">
+                                            {selectedPlayerForLogin.avatar}
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold font-heading">{selectedPlayerForLogin.name}</h2>
+                                    <p className="text-gray-400 text-sm">Introduce tu PIN de seguridad</p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleLogin} className="space-y-4">
+                                <div className="relative">
+                                    <input
+                                        type="password"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={loginPin}
+                                        onChange={(e) => setLoginPin(e.target.value)}
+                                        className={`w-full bg-white/5 border-2 rounded-2xl px-4 py-4 text-center text-3xl font-mono tracking-[1em] focus:outline-none transition-all ${loginError ? 'border-red-500 animate-shake' : 'border-white/10 focus:border-primary'}`}
+                                        placeholder="****"
+                                        autoFocus
+                                    />
+                                    {loginError && <p className="text-red-500 text-xs mt-2 uppercase font-bold tracking-widest">PIN Incorrecto</p>}
+                                </div>
+                                <div className="flex gap-3">
+                                    <Button type="button" variant="ghost" className="flex-1" onClick={() => {
+                                        setSelectedPlayerForLogin(null);
+                                        setLoginPin('');
+                                    }}>
+                                        Volver
+                                    </Button>
+                                    <Button type="submit" glow className="flex-1" disabled={loginPin.length < 4}>
+                                        ENTRAR
+                                    </Button>
+                                </div>
+                            </form>
+                        </Card>
+                    </motion.div>
+                ) : !isCreating ? (
                     <motion.div
                         key="list"
                         initial={{ opacity: 0, y: 20 }}
@@ -53,10 +125,10 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                         className="w-full max-w-md space-y-8"
                     >
                         <div className="text-center space-y-2">
-                            <h1 className="text-4xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                                ¿QUIÉN JUEGA?
+                            <h1 className="text-4xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent font-heading tracking-tighter italic uppercase">
+                                ¿Quién eres?
                             </h1>
-                            <p className="text-gray-400">Selecciona tu perfil</p>
+                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Selecciona tu perfil para entrar</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -64,8 +136,8 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 <Card
                                     key={player.id}
                                     glass
-                                    className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6 relative"
-                                    onClick={() => onSelect(player)}
+                                    className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6 relative border-white/5 bg-white/[0.02]"
+                                    onClick={() => player.pin ? setSelectedPlayerForLogin(player) : onSelect(player)}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -76,20 +148,27 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                                 deletePlayer(player.id);
                                             }
                                         }}
-                                        className="absolute top-2 right-2 p-1 rounded-lg bg-red-500/20 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/30"
+                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
+
+                                    {player.pin && (
+                                        <div className="absolute top-2 left-2 p-1 rounded-full bg-primary/10 text-primary">
+                                            <Lock className="w-3 h-3" />
+                                        </div>
+                                    )}
+
                                     {player.photoURL ? (
-                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/50 group-hover:border-primary transition-colors">
+                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 group-hover:border-primary transition-colors">
                                             <img src={player.photoURL} alt={player.name} className="w-full h-full object-cover" />
                                         </div>
                                     ) : (
-                                        <div className="text-5xl drop-shadow-[0_0_10px_rgba(var(--color-primary),0.5)]">
+                                        <div className="text-5xl drop-shadow-[0_0_10px_rgba(var(--color-primary),0.3)]">
                                             {player.avatar}
                                         </div>
                                     )}
-                                    <span className="font-heading text-xl font-bold tracking-wide group-hover:text-primary transition-colors">
+                                    <span className="font-heading text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
                                         {player.name}
                                     </span>
                                 </Card>
@@ -105,7 +184,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center">
                                     <Plus className="w-6 h-6" />
                                 </div>
-                                <span className="font-heading font-bold text-sm">NUEVO JUGADOR</span>
+                                <span className="font-heading font-bold text-xs uppercase tracking-widest">Nuevo Perfil</span>
                             </Card>
                         </div>
                     </motion.div>
@@ -117,19 +196,18 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="w-full max-w-md"
                     >
-                        <Card className="space-y-6">
+                        <Card className="space-y-6 p-8 border-accent/20">
                             <div className="text-center">
-                                <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                                    NUEVO PERFIL
+                                <h2 className="text-3xl font-bold font-heading italic bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent uppercase tracking-tighter">
+                                    Nuevo Perfil
                                 </h2>
-                                <p className="text-sm text-gray-400">Elige tu nombre y foto</p>
+                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Configura tu seguridad</p>
                             </div>
 
                             <form onSubmit={handleCreate} className="space-y-6">
-                                {/* Photo Section */}
                                 <div className="flex flex-col items-center gap-3">
                                     <div
-                                        className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-white/10 hover:border-primary transition-colors cursor-pointer group"
+                                        className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-white/10 hover:border-primary transition-colors cursor-pointer group shadow-xl"
                                         onClick={() => setShowPhotoCapture(true)}
                                     >
                                         {photoURL ? (
@@ -146,27 +224,44 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     <button
                                         type="button"
                                         onClick={() => setShowPhotoCapture(true)}
-                                        className="text-xs text-primary hover:text-primary/80 transition-colors"
+                                        className="text-[10px] text-primary hover:text-primary/80 transition-colors uppercase font-bold tracking-widest"
                                     >
-                                        {photoURL ? 'Cambiar foto' : 'Agregar foto'}
+                                        {photoURL ? 'Cambiar foto' : 'Subir foto'}
                                     </button>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs uppercase font-bold text-gray-500 tracking-wider">Nombre</label>
-                                    <input
-                                        type="text"
-                                        value={newName}
-                                        onChange={(e) => setNewName(e.target.value)}
-                                        className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors text-center font-heading text-lg font-bold placeholder-white/10"
-                                        placeholder="Tu nick"
-                                        autoFocus
-                                    />
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">Nickname</label>
+                                        <input
+                                            type="text"
+                                            value={newName}
+                                            onChange={(e) => setNewName(e.target.value)}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors text-center font-heading text-xl font-bold placeholder-white/5"
+                                            placeholder="Tu nombre aquí"
+                                            autoFocus
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">PIN de Seguridad (4 dígitos)</label>
+                                        <input
+                                            type="password"
+                                            inputMode="numeric"
+                                            maxLength={4}
+                                            value={newPin}
+                                            onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, ''))}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors text-center font-mono text-2xl tracking-[0.5em] placeholder-white/5"
+                                            placeholder="****"
+                                        />
+                                        <p className="text-[9px] text-gray-500 text-center italic">Usa un PIN opcional para que nadie entre a tu perfil.</p>
+                                    </div>
                                 </div>
 
                                 {!photoURL && (
                                     <div className="space-y-2">
-                                        <label className="text-xs uppercase font-bold text-gray-500 tracking-wider">Avatar (opcional)</label>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">Avatar</label>
                                         <div className="grid grid-cols-4 gap-2">
                                             {AVATARS.map(emoji => (
                                                 <button
@@ -182,11 +277,11 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     </div>
                                 )}
 
-                                <div className="flex gap-3 pt-2">
+                                <div className="flex gap-3 pt-4">
                                     <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsCreating(false)}>
                                         Cancelar
                                     </Button>
-                                    <Button type="submit" glow className="flex-1">
+                                    <Button type="submit" glow className="flex-1" disabled={!newName.trim()}>
                                         CREAR
                                     </Button>
                                 </div>

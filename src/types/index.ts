@@ -13,6 +13,7 @@ export interface Player {
     };
     friends: string[]; // List of Player IDs
     friendRequests?: string[]; // Array of player IDs who sent a request
+    pin?: string; // Optional security PIN
     ownerId: string;
     createdAt: number;
 }

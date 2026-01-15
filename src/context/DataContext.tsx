@@ -18,9 +18,10 @@ interface DataContextType {
     addMatch: (match: Match) => Promise<void>;
     updateMatch: (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => Promise<void>;
     deleteMatch: (matchId: string) => Promise<void>;
-    addPlayer: (name: string, avatar: string, photoURL?: string) => Promise<Player>;
+    addPlayer: (name: string, avatar: string, photoURL?: string, pin?: string) => Promise<Player>;
     deletePlayer: (playerId: string) => Promise<void>;
     updatePlayerFriends: (hostId: string, friendId: string) => Promise<void>;
+    removePlayerFriend: (hostId: string, friendId: string) => Promise<void>;
     getPlayer: (id: string) => Player | undefined;
 }
 
@@ -56,14 +57,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return JSON.parse(JSON.stringify(data));
     };
 
-    const addPlayer = async (name: string, avatar: string, photoURL?: string) => {
+    const addPlayer = async (name: string, avatar: string, photoURL?: string, pin?: string) => {
         try {
-            console.log('🔵 Creating player:', { name, avatar, photoURL });
+            console.log('🔵 Creating player:', { name, avatar, photoURL, pin: pin ? '****' : 'none' });
 
             const rawPlayer = {
                 name,
                 avatar,
                 photoURL,
+                pin,
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
                 createdAt: Date.now(),
@@ -71,10 +73,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             };
 
             const newPlayer = cleanData(rawPlayer);
-            console.log('🔵 Cleaned player data:', newPlayer);
-
             const docRef = await addDoc(collection(db, 'players'), newPlayer);
-            console.log('✅ Player created with ID:', docRef.id);
             return { id: docRef.id, ...newPlayer } as Player;
         } catch (error: any) {
             console.error('❌ Error creating player:', error);
@@ -92,10 +91,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     const updatePlayerFriends = async (hostId: string, friendId: string) => {
-        const hostRef = doc(db, 'players', hostId);
-        await updateDoc(hostRef, {
-            friends: arrayUnion(friendId)
-        });
+        try {
+            const hostRef = doc(db, 'players', hostId);
+            const friendRef = doc(db, 'players', friendId);
+            await updateDoc(hostRef, { friends: arrayUnion(friendId) });
+            await updateDoc(friendRef, { friends: arrayUnion(hostId) });
+        } catch (error) {
+            console.error('❌ Error updating friends:', error);
+            throw error;
+        }
+    };
+
+    const removePlayerFriend = async (hostId: string, friendId: string) => {
+        try {
+            const hostRef = doc(db, 'players', hostId);
+            const friendRef = doc(db, 'players', friendId);
+            await updateDoc(hostRef, {
+                friends: (await import('firebase/firestore')).arrayRemove(friendId)
+            });
+            await updateDoc(friendRef, {
+                friends: (await import('firebase/firestore')).arrayRemove(hostId)
+            });
+        } catch (error) {
+            console.error('❌ Error removing friend:', error);
+            throw error;
+        }
     };
 
     const getPlayer = (id: string) => players.find(p => p.id === id);
@@ -205,6 +225,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             addPlayer,
             deletePlayer,
             updatePlayerFriends,
+            removePlayerFriend,
             getPlayer
         }}>
             {children}

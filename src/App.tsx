@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { SessionProvider } from './context/SessionContext';
@@ -18,7 +18,42 @@ import { ProfilePage } from './pages/profile/ProfilePage';
 import type { Player } from './types';
 
 function MainApp() {
+  const { players, loading } = useData();
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
+
+  // Load from persistence
+  useEffect(() => {
+    if (!currentPlayer && !loading) {
+      const savedId = localStorage.getItem('fifa_tracker_current_player_id');
+      if (savedId) {
+        const p = players.find(p => p.id === savedId);
+        if (p) setCurrentPlayer(p);
+      }
+    }
+  }, [players, loading, currentPlayer]);
+
+  // Save to persistence
+  useEffect(() => {
+    if (currentPlayer) {
+      localStorage.setItem('fifa_tracker_current_player_id', currentPlayer.id);
+    } else {
+      localStorage.removeItem('fifa_tracker_current_player_id');
+    }
+  }, [currentPlayer]);
+
+  // Keep current player synced with DB
+  useEffect(() => {
+    if (currentPlayer) {
+      const updatedPlayer = players.find(p => p.id === currentPlayer.id);
+      if (updatedPlayer && JSON.stringify(updatedPlayer) !== JSON.stringify(currentPlayer)) {
+        setCurrentPlayer(updatedPlayer);
+      }
+    }
+  }, [players]);
+
+  if (loading && !currentPlayer) {
+    return <div className="h-screen flex items-center justify-center bg-background text-primary animate-pulse uppercase font-bold tracking-widest">Iniciando...</div>;
+  }
 
   if (!currentPlayer) {
     return <ProfileSelection onSelect={setCurrentPlayer} />;
@@ -48,7 +83,7 @@ function MainApp() {
   );
 }
 
-import { DataProvider } from './context/DataContext';
+import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {

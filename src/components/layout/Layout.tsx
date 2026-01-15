@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Gamepad2, Trophy, Users } from 'lucide-react';
+import { Gamepad2, Trophy, Clock } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
@@ -67,7 +67,7 @@ export const Layout = ({ children, player }: LayoutProps) => {
                             <Gamepad2 className="w-8 h-8 text-white" />
                         </Link>
                     </div>
-                    <NavLink to="/friends" icon={<Users className="w-6 h-6" />} label="Social" active={location.pathname === '/friends'} />
+                    <NavLink to="/history" icon={<Clock className="w-6 h-6" />} label="Historial" active={location.pathname === '/history'} />
                 </div>
             </nav>
         </div>

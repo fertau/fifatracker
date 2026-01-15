@@ -9,7 +9,7 @@ import type { Player } from '../../types';
 
 export function SessionSetup({ currentUser }: { currentUser: Player }) {
     const navigate = useNavigate();
-    const { getFriendsOf } = usePlayers();
+    const { getFriendsOf, autoFriendship } = usePlayers();
     const { startSession } = useSession();
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
 
@@ -24,8 +24,13 @@ export function SessionSetup({ currentUser }: { currentUser: Player }) {
         }
     };
 
-    const handleStart = () => {
+    const handleStart = async () => {
         if (selectedPlayers.length < 1) return;
+
+        // Auto-friendship between host and selected players
+        const allInSession = [currentUser.id, ...selectedPlayers];
+        await autoFriendship(allInSession);
+
         startSession(selectedPlayers);
         navigate('/');
     };

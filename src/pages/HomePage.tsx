@@ -31,10 +31,14 @@ export function HomePage({ player }: DashboardProps) {
     // 1. New matches
     const recentMatches = [...matches].sort((a, b) => b.date - a.date).slice(0, 3);
     recentMatches.forEach(m => {
+        const getNames = (ids: string[]) => ids.map(id => players.find(p => p.id === id)?.name || 'Jugador').join(', ');
+        const t1 = getNames(m.players.team1);
+        const t2 = getNames(m.players.team2);
+
         socialNews.push({
             id: `match-${m.id}`,
             type: 'match',
-            content: `Partido registrado: ${m.score.team1} - ${m.score.team2}`,
+            content: `${t1} vs ${t2} (${m.score.team1} - ${m.score.team2})`,
             time: new Date(m.date).toLocaleDateString(),
             icon: <Activity className="w-4 h-4 text-primary" />
         });
