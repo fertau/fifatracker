@@ -16,9 +16,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            setUser(currentUser);
-            setLoading(false);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (!currentUser) {
+                // Auto sign-in anonymously if no user
+                try {
+                    await signInAnonymously(auth);
+                } catch (error) {
+                    console.error("Error auto-signing in:", error);
+                    setLoading(false);
+                }
+            } else {
+                setUser(currentUser);
+                setLoading(false);
+            }
         });
         return unsubscribe;
     }, []);

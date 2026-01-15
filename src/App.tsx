@@ -57,15 +57,18 @@ function MainApp() {
 }
 
 import { DataProvider } from './context/DataContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <ThemeProvider>
-      <DataProvider>
-        <SessionProvider>
-          <MainApp />
-        </SessionProvider>
-      </DataProvider>
+      <AuthProvider>
+        <DataProvider>
+          <SessionProvider>
+            <MainApp />
+          </SessionProvider>
+        </DataProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
