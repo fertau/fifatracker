@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { SessionProvider } from './context/SessionContext';
 import { Layout } from './components/layout/Layout';
@@ -25,6 +25,7 @@ function MainApp() {
   const { players, loading } = useData();
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [showSplash, setShowSplash] = useState(true);
+  const navigate = useNavigate();
 
   // Splash Screen timer (2 seconds)
   useEffect(() => {
@@ -47,10 +48,7 @@ function MainApp() {
 
   // Save to persistence
   useEffect(() => {
-    // CRITICAL: Don't touch localStorage while initial data is still loading
-    // to avoid clearing the saved session before restoration
     if (loading) return;
-
     if (currentPlayer) {
       localStorage.setItem('fifa_tracker_current_player_id', currentPlayer.id);
     } else {
@@ -68,6 +66,11 @@ function MainApp() {
     }
   }, [players]);
 
+  const handleLogout = () => {
+    setCurrentPlayer(null);
+    navigate('/', { replace: true });
+  };
+
   return (
     <>
       <AnimatePresence>
@@ -83,26 +86,24 @@ function MainApp() {
           ) : !currentPlayer ? (
             <ProfileSelection onSelect={setCurrentPlayer} />
           ) : (
-            <BrowserRouter>
-              <Layout player={currentPlayer}>
-                <Routes>
-                  <Route path="/" element={<HomePage player={currentPlayer} />} />
-                  <Route path="/play" element={<PlayMenu />} />
-                  <Route path="/profile" element={
-                    <ProfilePage player={currentPlayer} onLogout={() => setCurrentPlayer(null)} />
-                  } />
-                  <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
-                  <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
-                  <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
-                  <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
-                  <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
-                  <Route path="/match/new" element={<NewMatch />} />
-                  <Route path="/tournament/new" element={<NewTournament />} />
-                  <Route path="/tournament/:id" element={<TournamentDetails />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Layout>
-            </BrowserRouter>
+            <Layout player={currentPlayer}>
+              <Routes>
+                <Route path="/" element={<HomePage player={currentPlayer} />} />
+                <Route path="/play" element={<PlayMenu />} />
+                <Route path="/profile" element={
+                  <ProfilePage player={currentPlayer} onLogout={handleLogout} />
+                } />
+                <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
+                <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
+                <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
+                <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
+                <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
+                <Route path="/match/new" element={<NewMatch />} />
+                <Route path="/tournament/new" element={<NewTournament />} />
+                <Route path="/tournament/:id" element={<TournamentDetails />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Layout>
           )}
         </>
       )}
@@ -112,15 +113,17 @@ function MainApp() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <DataProvider>
-          <SessionProvider>
-            <MainApp />
-          </SessionProvider>
-        </DataProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <DataProvider>
+            <SessionProvider>
+              <MainApp />
+            </SessionProvider>
+          </DataProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
