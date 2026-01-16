@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogOut, ArrowLeft, Camera, User } from 'lucide-react';
+import { Trash2, LogOut, ArrowLeft, Camera, User, Palette, CheckCircle2 } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
+import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { PhotoCapture } from '../../components/PhotoCapture';
+import { cn } from '../../lib/utils';
 import type { Player } from '../../types';
 
 interface ProfilePageProps {
@@ -14,8 +16,15 @@ interface ProfilePageProps {
 
 export function ProfilePage({ player, onLogout }: ProfilePageProps) {
     const { deletePlayer, updatePlayer } = usePlayers();
+    const { theme: currentTheme, setTheme } = useTheme();
     const navigate = useNavigate();
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+
+    const themes = [
+        { id: 'default', name: 'Ultimate Neon', colors: ['#00f3ff', '#b026ff'], description: 'El estilo clásico de FIFA.', badge: 'Original' },
+        { id: 'carbon', name: 'Carbon Elite', colors: ['#ffffff', '#969696'], description: 'Elegancia y sigilo minimalista.', badge: 'Premium' },
+        { id: 'volcanic', name: 'Volcanic Victory', colors: ['#ff3c00', '#ffa500'], description: 'Energía pura y fuego en el campo.', badge: 'Intenso' }
+    ];
 
     const handleDelete = async () => {
         if (confirm(`¿Estás seguro de que quieres eliminar permanentemente a ${player.name}? Esta acción no se puede deshacer.`)) {
@@ -94,6 +103,47 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
 
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tighter font-heading italic uppercase">{player.name}</h1>
+                </div>
+
+                {/* Theme Selector Section */}
+                <div className="pt-6 border-t border-white/5 space-y-4 text-left">
+                    <div className="flex items-center gap-2 px-1">
+                        <Palette className="w-4 h-4 text-primary" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Apariencia</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                        {themes.map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => setTheme(t.id as any)}
+                                className={cn(
+                                    "p-3 rounded-2xl border-2 transition-all flex items-center justify-between group",
+                                    currentTheme === t.id ? "border-primary bg-primary/5" : "border-white/5 bg-white/[0.01] hover:border-white/20"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="flex -space-x-1">
+                                        {t.colors.map((c, i) => (
+                                            <div key={i} className="w-4 h-4 rounded-full border border-background shadow-sm" style={{ backgroundColor: c }} />
+                                        ))}
+                                    </div>
+                                    <div className="flex flex-col text-left">
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn("text-xs font-black uppercase tracking-tight", currentTheme === t.id ? "text-primary" : "text-gray-300")}>
+                                                {t.name}
+                                            </span>
+                                            <span className="text-[8px] bg-white/5 px-1.5 py-0.5 rounded border border-white/5 text-gray-500 font-black tracking-widest uppercase">{t.badge}</span>
+                                        </div>
+                                        <p className="text-[9px] text-gray-600 font-medium leading-none mt-1">{t.description}</p>
+                                    </div>
+                                </div>
+                                {currentTheme === t.id && (
+                                    <CheckCircle2 className="w-4 h-4 text-primary animate-in zoom-in duration-300" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Main Actions */}

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'fifa' | 'cyberpunk' | 'retro';
+type Theme = 'default' | 'carbon' | 'volcanic';
 
 interface ThemeContextType {
     theme: Theme;
@@ -11,13 +11,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>(() => {
-        const saved = localStorage.getItem('theme');
-        return (saved as Theme) || 'fifa';
+        const saved = localStorage.getItem('app-theme');
+        return (saved as Theme) || 'default';
     });
 
     useEffect(() => {
-        localStorage.setItem('theme', theme);
-        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('app-theme', theme);
+        if (theme === 'default') {
+            document.documentElement.removeAttribute('data-theme');
+        } else {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
     }, [theme]);
 
     return (

@@ -23,34 +23,30 @@
     --font-body: 'Rajdhani', sans-serif;
   }
 
-  [data-theme='cyberpunk'] {
-    --color-primary: 255 0 60;
-    /* Neon Red */
-    --color-secondary: 251 255 0;
-    /* Neon Yellow */
-    --color-accent: 0 240 255;
-    /* Cyan */
-    --color-background: 5 0 10;
-    /* Deep Purple Black */
-    --color-surface: 20 5 25;
-    --font-heading: 'Orbitron', sans-serif;
+  [data-theme='carbon'] {
+    --color-primary: 255 255 255;
+    /* White/Silver */
+    --color-secondary: 150 150 150;
+    /* Gray */
+    --color-accent: 0 243 255;
+    /* Blue */
+    --color-background: 8 8 10;
+    --color-surface: 16 16 20;
+    --font-heading: 'Rajdhani', sans-serif;
     --font-body: 'Rajdhani', sans-serif;
   }
 
-  [data-theme='retro'] {
-    --color-primary: 255 165 0;
-    /* Orange */
-    --color-secondary: 50 205 50;
-    /* Lime */
-    --color-accent: 255 0 255;
-    /* Magenta */
-    --color-background: 30 30 30;
-    /* Gray */
-    --color-surface: 0 0 0;
-    /* Black */
-    --font-heading: '"Press Start 2P"', cursive;
-    --font-body: 'VT323', monospace;
-    /* Need to import VT323 if used, or fallback */
+  [data-theme='volcanic'] {
+    --color-primary: 255 60 0;
+    /* Orange-Red */
+    --color-secondary: 255 165 0;
+    /* Gold */
+    --color-accent: 255 255 255;
+    /* White */
+    --color-background: 15 5 5;
+    --color-surface: 25 10 10;
+    --font-heading: 'Rajdhani', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
   }
 
   body {
