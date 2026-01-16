@@ -71,32 +71,34 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
             <Card glass className="text-center p-8 space-y-6 relative overflow-hidden border-primary/20">
                 <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent opacity-30" />
 
-                <div className="relative group mx-auto w-32 h-32">
-                    <div
-                        className="w-full h-full rounded-full overflow-hidden border-4 border-primary/50 shadow-[0_0_30px_rgba(var(--color-primary),0.3)] cursor-pointer hover:border-primary transition-all duration-300"
-                        onClick={() => setShowPhotoCapture(true)}
-                    >
-                        {player.photoURL ? (
-                            <img
-                                src={player.photoURL}
-                                alt={player.name}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-surface flex items-center justify-center text-7xl drop-shadow-glow">
-                                {player.avatar}
-                            </div>
-                        )}
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative group mx-auto w-32 h-32">
+                        <div
+                            className="w-full h-full rounded-full overflow-hidden border-4 border-primary/50 shadow-[0_0_30px_rgba(var(--color-primary),0.3)] cursor-pointer hover:border-primary transition-all duration-300"
+                            onClick={() => setShowPhotoCapture(true)}
+                        >
+                            {player.photoURL ? (
+                                <img
+                                    src={player.photoURL}
+                                    alt={player.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-surface flex items-center justify-center text-7xl drop-shadow-glow">
+                                    {player.avatar}
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowPhotoCapture(true)}
+                            className="absolute bottom-0 right-0 p-2 bg-primary rounded-full shadow-lg border-2 border-background text-white hover:scale-110 transition-transform"
+                        >
+                            <Camera className="w-4 h-4" />
+                        </button>
                     </div>
 
-                    <button
-                        onClick={() => setShowPhotoCapture(true)}
-                        className="absolute bottom-0 right-0 p-2 bg-primary rounded-full shadow-lg border-2 border-background text-white hover:scale-110 transition-transform"
-                    >
-                        <Camera className="w-4 h-4" />
-                    </button>
-
-                    <div className="mt-4 text-xs text-primary font-bold uppercase tracking-widest animate-pulse">
+                    <div className="text-[10px] text-primary font-black uppercase tracking-[0.2em] animate-pulse">
                         Toca para cambiar foto
                     </div>
                 </div>

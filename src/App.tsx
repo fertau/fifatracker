@@ -67,6 +67,7 @@ function MainApp() {
   }, [players]);
 
   const handleLogout = () => {
+    localStorage.removeItem('fifa_tracker_current_player_id');
     setCurrentPlayer(null);
     navigate('/', { replace: true });
   };

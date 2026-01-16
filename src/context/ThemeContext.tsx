@@ -11,12 +11,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setTheme] = useState<Theme>(() => {
-        const saved = localStorage.getItem('app-theme');
+        const saved = localStorage.getItem('fifa-app-theme-v2');
         return (saved as Theme) || 'default';
     });
 
     useEffect(() => {
-        localStorage.setItem('app-theme', theme);
+        localStorage.setItem('fifa-app-theme-v2', theme);
         if (theme === 'default') {
             document.documentElement.removeAttribute('data-theme');
         } else {
