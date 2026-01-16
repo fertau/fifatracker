@@ -29,18 +29,23 @@ export const Layout = ({ children, player }: LayoutProps) => {
                 <div className="flex items-center gap-3">
                     <Link
                         to="/profile"
-                        className="p-1 rounded-full border border-white/10 hover:border-primary transition-colors relative"
+                        className="flex flex-col items-center group transition-transform"
                     >
-                        {player.photoURL ? (
-                            <img src={player.photoURL} alt={player.name} className="w-8 h-8 rounded-full" />
-                        ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xl">
-                                {player.avatar}
-                            </div>
-                        )}
-                        {hasFriendRequests && (
-                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-background rounded-full animate-bounce" />
-                        )}
+                        <div className="p-1 rounded-full border border-white/10 group-hover:border-primary transition-colors relative">
+                            {player.photoURL ? (
+                                <img src={player.photoURL} alt={player.name} className="w-8 h-8 rounded-full" />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xl">
+                                    {player.avatar}
+                                </div>
+                            )}
+                            {hasFriendRequests && (
+                                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-background rounded-full animate-bounce" />
+                            )}
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 group-hover:text-primary transition-colors mt-1">
+                            {player.name}
+                        </span>
                     </Link>
                 </div>
             </header>

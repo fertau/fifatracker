@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Gamepad2, Users, Trophy, Play, ArrowLeft, Info } from 'lucide-react';
+import { Gamepad2, Users, Trophy, Play, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -81,20 +81,7 @@ export function PlayMenu() {
                 ))}
             </div>
 
-            {/* Information Alert */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4 items-center"
-            >
-                <div className="bg-yellow-500/10 p-2 rounded-xl">
-                    <Info className="w-5 h-5 text-yellow-500/70" />
-                </div>
-                <p className="text-[11px] text-gray-500 leading-tight">
-                    <strong className="text-gray-400">¿Buscas Torneos?</strong> Los torneos ahora se crean dentro de una <span className="text-accent underline">Sesión de Juego</span> para asegurar que todos los participantes estén registrados y activos.
-                </p>
-            </motion.div>
+
 
             <div className="pt-4 text-center">
                 <p className="text-gray-500 text-[10px] uppercase tracking-widest font-black opacity-30">
