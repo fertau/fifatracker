@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, Clock, MoreHorizontal } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
 import { cn } from '../lib/utils';
-import type { Player, PlayerStats } from '../types';
+import type { Player, PlayerStats, Match } from '../types';
 
 interface DashboardProps {
     player: Player;
@@ -76,37 +76,131 @@ export function HomePage({ player }: DashboardProps) {
     const currentPlayerWithStats = playersWithDerivedStats.find(p => p.id === player.id);
     const myRank = rankedPlayers.findIndex(p => p.id === player.id) + 1;
 
-    // Derive Social News
+    // --- AUTOMATIC SESSION CLUSTERING LOGIC ---
+    const getNames = (ids: string[]) => ids.map(id => players.find(p => p.id === id)?.name || 'Jugador').join(', ');
+
+    const sessions = (() => {
+        if (matches.length === 0) return [];
+        const sorted = [...matches].sort((a, b) => a.date - b.date);
+        const clusters: Match[][] = [];
+        let currentCluster: Match[] = [sorted[0]];
+
+        for (let i = 1; i < sorted.length; i++) {
+            const lastMatch = currentCluster[currentCluster.length - 1];
+            const currentMatch = sorted[i];
+
+            const timeDiff = currentMatch.date - lastMatch.date;
+            const lastPlayers = new Set([...lastMatch.players.team1, ...lastMatch.players.team2]);
+            const currentPlayers = new Set([...currentMatch.players.team1, ...currentMatch.players.team2]);
+
+            // Criteria: Less than 2 hours gap AND same exact set of players involved
+            const samePlayers = lastPlayers.size === currentPlayers.size &&
+                [...lastPlayers].every(p => currentPlayers.has(p));
+
+            if (timeDiff < 2 * 60 * 60 * 1000 && samePlayers) {
+                currentCluster.push(currentMatch);
+            } else {
+                clusters.push(currentCluster);
+                currentCluster = [currentMatch];
+            }
+        }
+        clusters.push(currentCluster);
+        return clusters.reverse(); // Newest sessions first
+    })();
+
+    // Derive Social News from Sessions
     const socialNews: any[] = [];
 
-    // 1. New matches
-    const recentMatches = [...matches].sort((a, b) => b.date - a.date).slice(0, 3);
-    recentMatches.forEach(m => {
-        const getNames = (ids: string[]) => ids.map(id => players.find(p => p.id === id)?.name || 'Jugador').join(', ');
-        const t1 = getNames(m.players.team1);
-        const t2 = getNames(m.players.team2);
+    // 1. Session News (Top 5 sessions)
+    sessions.slice(0, 5).forEach((session, sIdx) => {
+        const count = session.length;
+        const firstMatch = session[0];
+        const participantIds = new Set([...firstMatch.players.team1, ...firstMatch.players.team2]);
 
-        socialNews.push({
-            id: `match-${m.id}`,
-            type: 'match',
-            content: `${t1} vs ${t2} (${m.score.team1} - ${m.score.team2})`,
-            time: new Date(m.date).toLocaleDateString(),
-            icon: <Activity className="w-4 h-4 text-primary" />
-        });
+        if (count === 1) {
+            // Individual Match
+            const m = session[0];
+            const t1 = getNames(m.players.team1);
+            const t2 = getNames(m.players.team2);
+            socialNews.push({
+                id: `session-${sIdx}`,
+                type: 'match',
+                title: 'Partido Finalizado',
+                content: `${t1} vs ${t2} (${m.score.team1} - ${m.score.team2})`,
+                time: new Date(m.date).toLocaleDateString(),
+                icon: <Activity className="w-4 h-4 text-primary" />,
+                badge: m.type
+            });
+        } else {
+            // Grouped Session
+            const isH2H = participantIds.size === 2; // 1v1 or same 2 players swaping? No, just 2 people involved.
+
+            if (isH2H) {
+                const pIds = Array.from(participantIds);
+                let p1Wins = 0;
+                let p2Wins = 0;
+                let draws = 0;
+
+                session.forEach(m => {
+                    // This assumes 1v1 for simplification of summary
+                    const p1Id = pIds[0];
+                    const isP1Team1 = m.players.team1.includes(p1Id);
+                    const s1 = isP1Team1 ? m.score.team1 : m.score.team2;
+                    const s2 = isP1Team1 ? m.score.team2 : m.score.team1;
+
+                    if (m.endedBy === 'regular') {
+                        if (s1 > s2) p1Wins++; else if (s2 > s1) p2Wins++; else draws++;
+                    } else if (m.endedBy === 'penalties') {
+                        const winTeam = m.penaltyWinner;
+                        const p1Team = isP1Team1 ? 1 : 2;
+                        if (winTeam === p1Team) p1Wins++; else p2Wins++;
+                    } else if (m.endedBy === 'forfeit') {
+                        const loseTeam = m.forfeitLoser;
+                        const p1Team = isP1Team1 ? 1 : 2;
+                        if (loseTeam === p1Team) p2Wins++; else p1Wins++;
+                    }
+                });
+
+                const p1Name = players.find(p => p.id === pIds[0])?.name || 'Jugador';
+                const p2Name = players.find(p => p.id === pIds[1])?.name || 'Jugador';
+
+                socialNews.push({
+                    id: `session-${sIdx}`,
+                    type: 'session',
+                    title: 'Duelo Finalizado',
+                    content: `${p1Name} ${p1Wins} - ${p2Wins} ${p2Name} (${count} partidas)`,
+                    time: 'Sesión Agrupada',
+                    icon: <Users className="w-4 h-4 text-accent" />,
+                    badge: 'H2H'
+                });
+            } else {
+                // Multi-player Session
+                const playerNames = getNames(Array.from(participantIds));
+                socialNews.push({
+                    id: `session-${sIdx}`,
+                    type: 'session',
+                    title: 'Sesión Grupal',
+                    content: `${playerNames}: ${count} partidos registrados.`,
+                    time: 'Hace un momento',
+                    icon: <Users className="w-4 h-4 text-purple-500" />,
+                    badge: `${participantIds.size} Jugadores`
+                });
+            }
+        }
     });
 
-    // 2. Ranking changes / Top status
+    // 2. Ranking / Milestone News (limit to top 1-2 keep it clean)
     if (myRank > 0 && myRank <= 3 && matches.length > 0) {
         socialNews.push({
             id: 'rank-top',
             type: 'rank',
-            content: `¡Estás en el TOP 3 del ranking! Mantén el nivel.`,
-            time: 'Hoy',
+            title: '¡Imparable!',
+            content: `Mantienes tu posición en el TOP 3 del ranking mundial.`,
+            time: 'Ranking',
             icon: <Star className="w-4 h-4 text-yellow-500" />
         });
     }
 
-    // 3. Streaks or high scores
     const topScorer = [...playersWithDerivedStats]
         .filter(p => p.derivedStats.goalsScored > 0)
         .sort((a, b) => b.derivedStats.goalsScored - a.derivedStats.goalsScored)[0];
@@ -115,9 +209,10 @@ export function HomePage({ player }: DashboardProps) {
         socialNews.push({
             id: 'top-scorer',
             type: 'milestone',
-            content: `${topScorer.name} es el máximo goleador con ${topScorer.derivedStats.goalsScored} goles.`,
-            time: 'Novedad',
-            icon: <Trophy className="w-4 h-4 text-accent" />
+            title: 'Pichichi',
+            content: `${topScorer.name} lidera la tabla de goleadores con ${topScorer.derivedStats.goalsScored} tantos.`,
+            time: 'Liderazgo',
+            icon: <Trophy className="w-4 h-4 text-yellow-400" />
         });
     }
 
@@ -137,25 +232,52 @@ export function HomePage({ player }: DashboardProps) {
 
             {/* Social News Feed */}
             <section className="space-y-3">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                    <TrendingUp className="w-3 h-3" /> Novedades Sociales
-                </h3>
-                <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <TrendingUp className="w-3 h-3 text-secondary" /> Novedades Sociales
+                    </h3>
+                    <div className="text-[9px] uppercase font-black text-gray-600 tracking-widest flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Auto-Agrupado
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
                     {socialNews.length > 0 ? socialNews.map(news => (
-                        <Card key={news.id} glass={false} className="p-3 border-white/5 bg-white/[0.02]">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-white/5 border border-white/10 mt-1">
+                        <Card key={news.id} glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all p-4">
+                            {/* Visual Indicator Line */}
+                            <div className={cn(
+                                "absolute left-0 top-0 bottom-0 w-1",
+                                news.type === 'session' ? "bg-accent" :
+                                    news.type === 'rank' ? "bg-yellow-500" :
+                                        news.type === 'milestone' ? "bg-purple-500" : "bg-primary"
+                            )} />
+
+                            <div className="flex items-start gap-4">
+                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform">
                                     {news.icon}
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-200">{news.content}</p>
-                                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">{news.time}</span>
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">{news.title}</p>
+                                        {news.badge && (
+                                            <span className="text-[8px] bg-white/5 px-2 py-0.5 rounded-full border border-white/10 font-black text-gray-400">
+                                                {news.badge}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-200 leading-tight">{news.content}</p>
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <span className="text-[9px] text-gray-600 uppercase font-black tracking-widest">{news.time}</span>
+                                    </div>
                                 </div>
-                                {news.type === 'rank' && <ArrowUpRight className="w-4 h-4 text-green-500" />}
+                                {news.type === 'rank' && <ArrowUpRight className="w-4 h-4 text-yellow-500 animate-pulse" />}
                             </div>
                         </Card>
                     )) : (
-                        <p className="text-center py-4 text-gray-500 text-xs italic">No hay novedades recientes por ahora.</p>
+                        <div className="text-center py-8 bg-white/[0.01] rounded-3xl border border-dashed border-white/5">
+                            <MoreHorizontal className="w-8 h-8 mx-auto text-gray-800 mb-2" />
+                            <p className="text-xs text-gray-600 italic">No hay actividad reciente para agrupar.</p>
+                        </div>
                     )}
                 </div>
             </section>
@@ -164,32 +286,38 @@ export function HomePage({ player }: DashboardProps) {
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <Star className="w-3 h-3 text-yellow-500" /> Top Jugadores
+                        <Star className="w-3 h-3 text-yellow-500" /> Líderes de la Comunidad
                     </h3>
                     <Link to="/stats" className="text-[10px] text-primary hover:underline uppercase font-bold tracking-widest">
-                        Ver Rankings Completos
+                        Ranking Completo
                     </Link>
                 </div>
                 <div className="space-y-2">
                     {rankedPlayers.slice(0, 3).map((p, idx) => (
-                        <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>
+                        <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5 transition-all hover:border-white/20", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>
                             <div className="flex items-center gap-4">
-                                <span className={cn("font-bold text-xl italic font-mono w-6", idx === 0 ? "text-yellow-500" : "text-gray-400")}>
-                                    {idx + 1}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{p.avatar}</span>
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-sm">{p.name} {p.id === player.id && "(Tú)"}</span>
-                                        <span className="text-[10px] text-gray-500 uppercase font-bold">
-                                            {p.derivedStats.matchesPlayed > 0 ? Math.round((p.derivedStats.wins / p.derivedStats.matchesPlayed) * 100) : 0}% efectividad
+                                <div className="relative">
+                                    <span className={cn("absolute -top-3 -left-2 font-black text-xs italic font-mono", idx === 0 ? "text-yellow-500" : "text-gray-600")}>
+                                        #{idx + 1}
+                                    </span>
+                                    <span className="text-3xl drop-shadow-glow">{p.avatar}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-bold text-sm tracking-tight">{p.name} {p.id === player.id && "(Tú)"}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">
+                                            {p.derivedStats.matchesPlayed} Partidos
+                                        </span>
+                                        <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                                        <span className="text-[9px] text-primary font-black uppercase tracking-widest">
+                                            {p.derivedStats.matchesPlayed > 0 ? Math.round((p.derivedStats.wins / p.derivedStats.matchesPlayed) * 100) : 0}% Win Rate
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="block font-bold text-sm text-primary">{p.derivedStats.wins}W</span>
-                                <span className="text-[10px] text-gray-500">{p.derivedStats.matchesPlayed} partidas</span>
+                            <div className="bg-black/20 px-3 py-1 rounded-lg border border-white/5 text-center min-w-[50px]">
+                                <span className="block font-black text-xs text-primary">{p.derivedStats.wins}W</span>
+                                <span className="text-[8px] text-gray-600 font-bold uppercase">{p.derivedStats.losses}L</span>
                             </div>
                         </Card>
                     ))}
@@ -198,28 +326,41 @@ export function HomePage({ player }: DashboardProps) {
 
             {/* My Stats Preview */}
             <div className="grid grid-cols-2 gap-3">
-                <Card glass className="p-4 border-primary/20 bg-primary/5">
-                    <TrendingUp className="w-4 h-4 text-primary mb-2" />
-                    <span className="block text-2xl font-bold">{currentPlayerWithStats?.derivedStats.goalsScored || 0}</span>
-                    <span className="text-[10px] text-gray-400 uppercase font-bold">Goles Anotados</span>
+                <Card glass className="p-5 border-primary/20 bg-primary/5 relative overflow-hidden group">
+                    <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Activity className="w-16 h-16" />
+                    </div>
+                    <TrendingUp className="w-4 h-4 text-primary mb-3" />
+                    <span className="block text-3xl font-black font-mono italic text-white drop-shadow-md">
+                        {currentPlayerWithStats?.derivedStats.goalsScored || 0}
+                    </span>
+                    <span className="text-[10px] text-gray-500 uppercase font-black tracking-[0.2em]">Goles Totales</span>
                 </Card>
-                <Card glass className="p-4 border-accent/20 bg-accent/5">
-                    <Activity className="w-4 h-4 text-accent mb-2" />
-                    <span className="block text-2xl font-bold">{currentPlayerWithStats?.derivedStats.matchesPlayed || 0}</span>
-                    <span className="text-[10px] text-gray-400 uppercase font-bold">Partidos Jugados</span>
+                <Card glass className="p-5 border-accent/20 bg-accent/5 relative overflow-hidden group">
+                    <div className="absolute -right-2 -bottom-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Users className="w-16 h-16" />
+                    </div>
+                    <Activity className="w-4 h-4 text-accent mb-3" />
+                    <span className="block text-3xl font-black font-mono italic text-white drop-shadow-md">
+                        {currentPlayerWithStats?.derivedStats.matchesPlayed || 0}
+                    </span>
+                    <span className="text-[10px] text-gray-500 uppercase font-black tracking-[0.2em]">Encuentros</span>
                 </Card>
             </div>
 
             {/* Quick Access to Social */}
             <Link to="/friends">
-                <Card className="p-4 flex items-center justify-between border-white/10 hover:border-primary transition-all">
-                    <div className="flex items-center gap-3">
-                        <Users className="w-5 h-5 text-primary" />
+                <Card className="p-4 flex items-center justify-between border-white/10 hover:border-primary/50 transition-all bg-gradient-to-r from-transparent to-primary/5">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                            <Users className="w-5 h-5 text-primary" />
+                        </div>
                         <div>
-                            <p className="font-bold text-sm">Mis Amigos</p>
-                            <p className="text-[10px] text-gray-500 uppercase">Tienes {myFriends.length} amigos</p>
+                            <p className="font-bold text-sm tracking-tight italic uppercase">Comunidad</p>
+                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Tienes {myFriends.length} amigos registrados</p>
                         </div>
                     </div>
+                    <ArrowUpRight className="w-5 h-5 text-primary/50" />
                 </Card>
             </Link>
         </div>

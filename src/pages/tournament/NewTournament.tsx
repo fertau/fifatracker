@@ -15,7 +15,9 @@ export function NewTournament() {
 
     const [name, setName] = useState('');
     const [type, setType] = useState<'league' | 'knockout'>('league');
-    const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+    const [selectedPlayers, setSelectedPlayers] = useState<string[]>(() => {
+        return isSessionActive && session ? session.playersPresent : [];
+    });
 
     // Filter players based on active session
     const availablePlayers = isSessionActive && session
