@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Gamepad2, Users, Trophy, Play, ArrowLeft } from 'lucide-react';
+import { Users, Trophy, Play, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -7,26 +7,7 @@ import { Button } from '../components/ui/Button';
 export function PlayMenu() {
     const navigate = useNavigate();
 
-    const menuOptions = [
-        {
-            id: 'match',
-            title: 'Partido rápido',
-            description: 'Un partido casual 1v1 o 2v2. Ideal si solo quieres registrar un resultado rápido sin gestionar quiénes están presentes.',
-            icon: <Play className="w-8 h-8 text-primary" />,
-            path: '/match/new',
-            color: 'border-primary/20 hover:border-primary',
-            badge: 'Express'
-        },
-        {
-            id: 'session',
-            title: 'Nueva Sesión de Juego',
-            description: 'La forma recomendada de jugar con amigos. Define quiénes están presentes hoy para registrar múltiples partidos, torneos y ver estadísticas del día.',
-            icon: <Users className="w-8 h-8 text-accent" />,
-            path: '/session/new',
-            color: 'border-accent/20 hover:border-accent',
-            badge: 'Recomendado'
-        }
-    ];
+
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
@@ -40,45 +21,108 @@ export function PlayMenu() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5">
-                {menuOptions.map((option, idx) => (
-                    <motion.div
-                        key={option.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        onClick={() => navigate(option.path)}
-                    >
-                        <Card
-                            glass
-                            className={`p-6 cursor-pointer group transition-all transform hover:scale-[1.02] border ${option.color} relative overflow-hidden`}
+            {/* Section 1: Ways to Play */}
+            <div className="space-y-4">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1 border-l-2 border-primary pl-3">
+                    Modos de Juego
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                    {[
+                        {
+                            id: 'match',
+                            title: 'Partido rápido',
+                            description: 'Un partido casual 1v1 o 2v2.',
+                            icon: <Play className="w-8 h-8 text-primary" />,
+                            path: '/match/new',
+                            color: 'border-primary/20 hover:border-primary',
+                            badge: 'Express'
+                        },
+                        {
+                            id: 'session',
+                            title: 'Nueva Sesión',
+                            description: 'Registra historial del día con amigos.',
+                            icon: <Users className="w-8 h-8 text-accent" />,
+                            path: '/session/new',
+                            color: 'border-accent/20 hover:border-accent',
+                            badge: 'Social'
+                        }
+                    ].map((option, idx) => (
+                        <motion.div
+                            key={option.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            onClick={() => navigate(option.path)}
                         >
-                            {/* Decorative Background Icon */}
-                            <div className="absolute -bottom-4 -right-4 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                                {option.id === 'match' ? <Gamepad2 className="w-32 h-32" /> : <Trophy className="w-32 h-32" />}
-                            </div>
-
-                            <div className="flex flex-col gap-4 relative z-10">
-                                <div className="flex items-start justify-between">
-                                    <div className="p-4 rounded-[1.5rem] bg-white/5 border border-white/10 shadow-inner group-hover:shadow-primary/20 transition-all">
+                            <Card
+                                glass
+                                className={`p-5 cursor-pointer group transition-all transform hover:translate-x-1 border-l-4 ${option.color} relative overflow-hidden bg-gradient-to-r from-white/[0.03] to-transparent`}
+                            >
+                                <div className="flex items-center gap-5">
+                                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform shadow-lg">
                                         {option.icon}
                                     </div>
-                                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-full border ${option.id === 'session' ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-primary/10 border-primary/20 text-primary'}`}>
-                                        {option.badge}
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <h3 className="text-xl font-bold uppercase tracking-tighter text-white group-hover:text-primary transition-colors">
+                                                {option.title}
+                                            </h3>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                                {option.badge}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors line-clamp-2">
+                                            {option.description}
+                                        </p>
+                                    </div>
+                                    <ArrowLeft className="w-4 h-4 text-gray-600 rotate-180 group-hover:text-white transition-colors" />
+                                </div>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Section 2: Competitions (Consult/Continue) */}
+            <div className="space-y-4 pt-4 border-t border-white/5">
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1 border-l-2 border-yellow-500 pl-3">
+                    Consultar / Continuar
+                </h3>
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={() => navigate('/tournaments')}
+                >
+                    <Card
+                        glass
+                        className="p-5 cursor-pointer group transition-all transform hover:translate-x-1 border-l-4 border-yellow-500/20 hover:border-yellow-500 relative overflow-hidden bg-gradient-to-r from-yellow-500/[0.03] to-transparent"
+                    >
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Trophy className="w-24 h-24 rotate-12" />
+                        </div>
+
+                        <div className="flex items-center gap-5 relative z-10">
+                            <div className="p-3 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 group-hover:scale-110 transition-transform shadow-lg">
+                                <Trophy className="w-8 h-8 text-yellow-500" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                    <h3 className="text-xl font-bold uppercase tracking-tighter text-white group-hover:text-yellow-400 transition-colors">
+                                        Torneos
+                                    </h3>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                                        Gestión
                                     </span>
                                 </div>
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-bold uppercase tracking-tighter group-hover:text-white transition-colors flex items-center gap-2">
-                                        {option.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                        {option.description}
-                                    </p>
-                                </div>
+                                <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                    Consulta tablas, fixtures o continúa tus competiciones activas.
+                                </p>
                             </div>
-                        </Card>
-                    </motion.div>
-                ))}
+                            <ArrowLeft className="w-4 h-4 text-gray-600 rotate-180 group-hover:text-white transition-colors" />
+                        </div>
+                    </Card>
+                </motion.div>
             </div>
 
 

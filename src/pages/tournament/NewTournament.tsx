@@ -109,7 +109,14 @@ export function NewTournament({ currentUser }: NewTournamentProps) {
                             glass={false}
                         >
                             <span className="text-2xl">{player.avatar}</span>
-                            <span className="font-bold text-sm truncate">{player.name}</span>
+                            <div className="flex flex-col overflow-hidden">
+                                <span className="font-bold text-sm truncate">{player.name}</span>
+                                {player.id === currentUser.id && (
+                                    <span className="text-[9px] text-yellow-500 uppercase font-black tracking-wider flex items-center gap-1">
+                                        Organizador
+                                    </span>
+                                )}
+                            </div>
                         </Card>
                     ))}
                 </div>

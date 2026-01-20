@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Target, Users as UsersIcon, TrendingUp, Award } from 'lucide-react';
+import { Trophy, Target, Users as UsersIcon, TrendingUp, Award, Info, X } from 'lucide-react';
 import { useAdvancedStats } from '../hooks/useAdvancedStats';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { Card } from '../components/ui/Card';
@@ -13,22 +14,64 @@ interface StatsPageProps {
 export function StatsPage({ player }: StatsPageProps) {
     const stats = useAdvancedStats(player.id);
     const { rankedPlayers } = useLeaderboard();
+    const [showInfo, setShowInfo] = useState(false);
 
     return (
         <div className="space-y-6 pb-20">
             {/* Header */}
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-2 relative">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 p-2 text-primary hover:bg-primary/10 rounded-full"
+                    onClick={() => setShowInfo(true)}
+                >
+                    <Info className="w-5 h-5" />
+                </Button>
                 <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
                     Estadísticas Avanzadas
                 </h1>
                 <p className="text-gray-400">{player.name}</p>
             </div>
 
+            {/* Info Modal */}
+            {showInfo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+                    <Card glass className="w-full max-w-sm p-6 space-y-4 border-primary/30 rounded-2xl shadow-2xl relative">
+                        <button
+                            onClick={() => setShowInfo(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-widest">
+                            <Info className="w-5 h-5" />
+                            <h3>¿Cómo se calcula?</h3>
+                        </div>
+                        <div className="space-y-3 text-sm text-gray-300">
+                            <p>El <strong>Ranking de Comunidad</strong> utiliza un algoritmo compuesto para determinar el rendimiento real:</p>
+                            <ul className="space-y-1 list-disc pl-4 text-xs">
+                                <li><strong>300 pts</strong> por Victoria</li>
+                                <li><strong>100 pts</strong> por Empate</li>
+                                <li><strong>10 pts</strong> por Diferencia de Gol Positiva</li>
+                                <li><strong>5 pts</strong> por Partido Jugado (Premio a la constancia)</li>
+                            </ul>
+                            <div className="bg-white/5 p-3 rounded-lg border border-white/5 text-xs italic text-gray-400">
+                                <p>"El sistema recompensa jugar más partidos. Un jugador con 10 victorias en 100 partidos tendrá más puntos que uno con 1 victoria en 1 partido."</p>
+                            </div>
+                        </div>
+                        <Button className="w-full" onClick={() => setShowInfo(false)}>Entendido</Button>
+                    </Card>
+                </div>
+            )}
+
             {/* Community Ranking Table */}
             <Card className="overflow-hidden border-white/5 bg-white/[0.02]">
-                <div className="p-4 border-b border-white/5 flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-yellow-500" />
-                    <h3 className="font-bold uppercase tracking-widest text-sm">Ranking Comunidad</h3>
+                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        <h3 className="font-bold uppercase tracking-widest text-sm">Ranking Comunidad</h3>
+                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">

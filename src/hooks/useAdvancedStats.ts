@@ -7,6 +7,12 @@ interface AdvancedStats {
     currentStreak: { type: 'win' | 'loss' | null; count: number };
     soloStats: { wins: number; losses: number; draws: number };
     teamStats: { wins: number; losses: number; draws: number };
+    matchesPlayed: number;
+    wins: number;
+    draws: number;
+    losses: number;
+    totalGoalsScored: number;
+    totalGoalsConceded: number;
 }
 
 export function useAdvancedStats(playerId: string) {
@@ -15,7 +21,7 @@ export function useAdvancedStats(playerId: string) {
     const calculateAdvancedStats = (): AdvancedStats => {
         const playerMatches = matches.filter(m =>
             m.players.team1.includes(playerId) || m.players.team2.includes(playerId)
-        ).sort((a, b) => a.date - b.date); // Sort chronologically
+        ).sort((a, b) => a.date - b.date);
 
         // Initialize stats
         const rivalStats = new Map<string, { wins: number; losses: number }>();
@@ -24,12 +30,23 @@ export function useAdvancedStats(playerId: string) {
         let soloStats = { wins: 0, losses: 0, draws: 0 };
         let teamStats = { wins: 0, losses: 0, draws: 0 };
 
+        let matchesPlayed = 0;
+        let wins = 0;
+        let draws = 0;
+        let losses = 0;
+        let totalGoalsScored = 0;
+        let totalGoalsConceded = 0;
+
         playerMatches.forEach(match => {
             const isTeam1 = match.players.team1.includes(playerId);
             const myTeam = isTeam1 ? match.players.team1 : match.players.team2;
             const opponentTeam = isTeam1 ? match.players.team2 : match.players.team1;
             const myScore = isTeam1 ? match.score.team1 : match.score.team2;
             const opponentScore = isTeam1 ? match.score.team2 : match.score.team1;
+
+            matchesPlayed++;
+            totalGoalsScored += myScore;
+            totalGoalsConceded += opponentScore;
 
             // Determine result
             let result: 'win' | 'loss' | 'draw' = 'draw';
@@ -43,6 +60,10 @@ export function useAdvancedStats(playerId: string) {
                 const amILoser = (isTeam1 && match.forfeitLoser === 1) || (!isTeam1 && match.forfeitLoser === 2);
                 result = amILoser ? 'loss' : 'win';
             }
+
+            if (result === 'win') wins++;
+            if (result === 'draw') draws++;
+            if (result === 'loss') losses++;
 
             // Solo vs Team stats
             const isSolo = myTeam.length === 1;
@@ -109,7 +130,13 @@ export function useAdvancedStats(playerId: string) {
             bestDuo,
             currentStreak,
             soloStats,
-            teamStats
+            teamStats,
+            matchesPlayed,
+            wins,
+            draws,
+            losses,
+            totalGoalsScored,
+            totalGoalsConceded
         };
     };
 

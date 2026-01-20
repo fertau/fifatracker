@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Trophy, Users, ArrowLeft, Shuffle, Sparkles, Trash2 } from 'lucide-react';
+import { Trophy, Users, ArrowLeft, Shuffle, Sparkles, Trash2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTournaments } from '../../hooks/useTournaments';
 import { usePlayers } from '../../hooks/usePlayers';
@@ -70,14 +70,43 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
         if (confirm('¿Seguro que quieres eliminar este torneo?')) {
             try {
                 await deleteTournament(tournament.id);
-                // Redirect logic handled by router usually, but here we might be sticking on 404
-                // We should navigate away. But I don't have navigate hook here.
-                // Actually I should allow user to go back manually or use <Navigate> if not found.
-                // Since I use window.location or navigate in component, I'll add useNavigate.
                 navigate('/');
             } catch (error) {
                 console.error('Error deleting:', error);
             }
+        }
+    };
+
+    const handleFinish = async () => {
+        if (!tournament) return;
+        if (confirm('¿Finalizar torneo de forma manual? Esto archivará el torneo.')) {
+            let winnerId: string | undefined;
+
+            if (tournament.type === 'league' && standings.length > 0) {
+                winnerId = standings[0].playerId;
+            } else if (tournament.type === 'knockout') {
+                // Find the match corresponding to the final slot (last item in fixtures array)
+                const finalSlotIndex = (tournament.fixtures?.length || 0) - 1;
+                const finalMatch = tournamentMatches.find(m => m.tournamentFixtureSlot === finalSlotIndex);
+
+                if (finalMatch && finalMatch.endedBy) {
+                    // Determine winner from the final match
+                    if (finalMatch.endedBy === 'regular') {
+                        if (finalMatch.score.team1 > finalMatch.score.team2) winnerId = finalMatch.players.team1[0];
+                        else if (finalMatch.score.team2 > finalMatch.score.team1) winnerId = finalMatch.players.team2[0];
+                    } else if (finalMatch.endedBy === 'penalties' && finalMatch.penaltyWinner) {
+                        winnerId = finalMatch.penaltyWinner === 1 ? finalMatch.players.team1[0] : finalMatch.players.team2[0];
+                    } else if (finalMatch.endedBy === 'forfeit' && finalMatch.forfeitLoser) {
+                        winnerId = finalMatch.forfeitLoser === 1 ? finalMatch.players.team2[0] : finalMatch.players.team1[0];
+                    }
+                }
+            }
+
+            await updateTournament(tournament.id, {
+                status: 'completed',
+                winner: winnerId
+            });
+            navigate('/tournaments');
         }
     };
 
@@ -184,6 +213,12 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
                 <div className="pt-6 border-t border-white/5 text-center">
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-2">Panel de Administrador</p>
                     <div className="flex gap-2 justify-center">
+                        {tournament.status === 'active' && (
+                            <Button variant="outline" size="sm" className="text-green-500 border-green-500/20 hover:bg-green-500/10" onClick={handleFinish}>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Finalizar Torneo
+                            </Button>
+                        )}
                         <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={handleDelete}>
                             <Trash2 className="w-4 h-4 mr-2" />
                             Eliminar Torneo
@@ -233,7 +268,7 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
                                     </div>
                                     {!match && (
                                         <div className="mt-4 flex justify-center">
-                                            <Link to={`/match/new?tournamentId=${tournament.id}&t1=${fixture.team1[0]}&t2=${fixture.team2[0]}`}>
+                                            <Link to={`/match/new?tournamentId=${tournament.id}&t1=${fixture.team1[0]}&t2=${fixture.team2[0]}&tournamentFixtureSlot=${idx}`}>
                                                 <Button size="sm" variant="outline" className="text-[10px] h-8">REGISTRAR RESULTADO</Button>
                                             </Link>
                                         </div>

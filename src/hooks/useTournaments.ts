@@ -42,24 +42,74 @@ export function useTournaments() {
         while (power < n) power *= 2;
 
         const paddedParticipants = [...participants];
+        // Standard seeding requires distribution. 
+        // For simplicity in this app, we shuffle real players first to randomize seeds, 
+        // then append BYEs at the end, then pair (First vs Last) pattern often used,
+        // OR simply Pair sequential: [P1, P2], [P3, BYE]...
+
+        // Better UX: Fill "Byes" into positions where they play against Top Seeds?
+        // Since we don't have "Seeds", we treat index 0 as highest seed after shuffle.
+
         while (paddedParticipants.length < power) {
             paddedParticipants.push('BYE');
         }
 
-        // 2. Generate Round 1 (Filled)
-        const fixtures: { team1: string[], team2: string[] }[] = [];
-        const totalParticipants = paddedParticipants.length;
+        // To avoid BYE vs BYE (impossible if we fill < power), but to avoid P1 vs P2 while P3 gets BYE,
+        // we should distribute BYEs. 
+        // If we have 5 players (3 BYEs):
+        // P1, P2, P3, P4, P5, BYE, BYE, BYE
+        // If we pair (0,1), (2,3), (4,5), (6,7):
+        // (P1, P2), (P3, P4), (P5, BYE), (BYE, BYE) -> ERROR: BYE vs BYE is wasted match.
+        // Actually, 8 slots. 5 players. 3 BYES.
+        // Ideal: 3 matches + 1 pure BYE advance?
+        // No, standard bracket 8 slots = 4 matches.
+        // M1: P1 vs BYE (P1 advances)
+        // M2: P2 vs BYE (P2 advances)
+        // M3: P3 vs BYE (P3 advances)
+        // M4: P4 vs P5
+        // Results in 4 semi-finalists: P1, P2, P3, Winner(M4). Perfect.
 
-        for (let i = 0; i < totalParticipants; i += 2) {
+        // Algorithm:
+        // 1. Sort participants (Random or Seeded).
+        // 2. Pair High vs Low? Or simply fill brackets.
+        // If we use simple filling:
+        // [P1, P2, P3, P4, P5, BYE, BYE, BYE]
+        // Pair 0-7, 1-6, 2-5, 3-4? (Tennis style 1 vs 8)
+        // (P1 vs BYE), (P2 vs BYE), (P3 vs BYE), (P4 vs P5).
+        // This works PERFECTLY.
+
+        // So, we need to implement "Fold" pairing?
+        // Let's doing "Inside-Out" or "Top-Bottom"?
+        // 0 vs N-1
+        // 1 vs N-2
+        // etc.
+
+        const fixtures: { team1: string[], team2: string[] }[] = [];
+        const total = paddedParticipants.length; // Power of 2
+
+        for (let i = 0; i < total / 2; i++) {
+            const p1 = paddedParticipants[i];
+            const p2 = paddedParticipants[total - 1 - i];
+
+            // If both are BYE (Should not happen if N > Total/2), but hypothetically:
+            // If we have 2 players in 8 slots?? 2 players, 6 BYEs.
+            // [P1, P2, B, B, B, B, B, B]
+            // 0-7: P1 vs B
+            // 1-6: P2 vs B
+            // 2-5: B vs B
+            // 3-4: B vs B
+            // We need to handle double BYE as "Null match"? Or just let it resolve.
+
             fixtures.push({
-                team1: [paddedParticipants[i]],
-                team2: [paddedParticipants[i + 1]]
+                team1: [p1],
+                team2: [p2]
             });
         }
 
-        // 3. Generate Future Rounds (Empty slots)
-        // Total matches = N - 1. We have added N/2 (Round 1).
-        const remainingMatches = (totalParticipants - 1) - fixtures.length;
+        // 2. Generate Future Rounds (Empty slots)
+        // Total matches in knockout tree = N-1.
+        // We generated N/2 matches for Round 1.
+        const remainingMatches = (total - 1) - fixtures.length;
         for (let i = 0; i < remainingMatches; i++) {
             fixtures.push({ team1: [], team2: [] });
         }

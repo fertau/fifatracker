@@ -1,11 +1,9 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, Clock, MoreHorizontal, CheckCircle2, XCircle, MinusCircle, Target, Shield } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
 import { cn, calculatePlayerScore } from '../lib/utils';
 import type { Player, Match } from '../types';
 
@@ -14,12 +12,9 @@ interface DashboardProps {
 }
 
 export function HomePage({ player }: DashboardProps) {
-    const { players, getFriendsOf } = usePlayers();
-    const [showAllNews, setShowAllNews] = useState(false);
+    const { players } = usePlayers();
 
     const { matches } = useData();
-
-    const myFriends = getFriendsOf(player.id);
 
     const { rankedPlayers } = useLeaderboard();
     const currentPlayerWithStats = rankedPlayers.find(p => p.id === player.id);
@@ -179,36 +174,38 @@ export function HomePage({ player }: DashboardProps) {
                 </div>
             </div>
 
-            {/* Social News Feed */}
+            {/* Social News Feed (Carousel) */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <TrendingUp className="w-3 h-3 text-secondary" /> Novedades Sociales
+                        <TrendingUp className="w-3 h-3 text-secondary" /> Novedades
                     </h3>
-                    <div className="text-[9px] uppercase font-black text-gray-600 tracking-widest flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> Auto-Agrupado
+                    <div className="flex gap-1">
+                        {socialNews.slice(0, 5).map((_, idx) => (
+                            <div key={idx} className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                        ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
                     {socialNews.length > 0 ? (
-                        <>
-                            {socialNews.slice(0, showAllNews ? undefined : 3).map(news => (
-                                <Card key={news.id} glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all p-4">
+                        socialNews.slice(0, 5).map(news => (
+                            <div key={news.id} className="w-full flex-shrink-0 snap-center scroll-ml-4">
+                                <Card glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.02] p-6 h-full flex flex-col justify-center">
                                     {/* Visual Indicator Line */}
                                     <div className={cn(
-                                        "absolute left-0 top-0 bottom-0 w-1",
+                                        "absolute left-0 top-0 bottom-0 w-1.5",
                                         news.type === 'session' ? "bg-accent" :
                                             news.type === 'rank' ? "bg-yellow-500" :
                                                 news.type === 'milestone' ? "bg-purple-500" : "bg-primary"
                                     )} />
 
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform">
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
                                             {news.icon}
                                         </div>
-                                        <div className="flex-1 space-y-1">
-                                            <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-2">
                                                 <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">{news.title}</p>
                                                 {news.badge && (
                                                     <span className="text-[8px] bg-white/5 px-2 py-0.5 rounded-full border border-white/10 font-black text-gray-400">
@@ -216,31 +213,98 @@ export function HomePage({ player }: DashboardProps) {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm font-bold text-gray-200 leading-tight">{news.content}</p>
-                                            <div className="flex items-center gap-2 pt-1">
-                                                <span className="text-[9px] text-gray-600 uppercase font-black tracking-widest">{news.time}</span>
-                                            </div>
+                                            <span className="text-[10px] text-gray-600 uppercase font-black tracking-widest">{news.time}</span>
                                         </div>
-                                        {news.type === 'rank' && <ArrowUpRight className="w-4 h-4 text-yellow-500 animate-pulse" />}
                                     </div>
+                                    <p className="text-lg font-bold text-gray-200 leading-tight">{news.content}</p>
                                 </Card>
-                            ))}
-                            {socialNews.length > 3 && (
-                                <Button
-                                    variant="ghost"
-                                    className="w-full text-xs uppercase tracking-widest text-gray-500 hover:text-white"
-                                    onClick={() => setShowAllNews(!showAllNews)}
-                                >
-                                    {showAllNews ? 'Ver menos' : 'Ver más novedades'}
-                                </Button>
-                            )}
-                        </>
+                            </div>
+                        ))
                     ) : (
-                        <div className="text-center py-8 bg-white/[0.01] rounded-3xl border border-dashed border-white/5">
-                            <MoreHorizontal className="w-8 h-8 mx-auto text-gray-800 mb-2" />
-                            <p className="text-xs text-gray-600 italic">No hay actividad reciente para agrupar.</p>
+                        <div className="w-full flex-shrink-0 snap-center">
+                            <div className="text-center py-8 bg-white/[0.01] rounded-3xl border border-dashed border-white/5 mx-auto">
+                                <MoreHorizontal className="w-8 h-8 mx-auto text-gray-800 mb-2" />
+                                <p className="text-xs text-gray-600 italic">No hay actividad reciente.</p>
+                            </div>
                         </div>
                     )}
+                </div>
+            </section>
+
+            {/* Performance Metrics */}
+            <section className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Activity className="w-3 h-3 text-primary" /> Rendimiento
+                    </h3>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold italic">Últimos 10</span>
+                </div>
+
+                <div className="space-y-3">
+                    {/* Line 1: Form */}
+                    <Card glass className="p-4 border-white/5 bg-white/[0.02]">
+                        <div className="flex justify-between items-center">
+                            <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Estado de Forma</label>
+                            <div className="flex gap-1.5">
+                                {(() => {
+                                    const myLastMatches = [...matches]
+                                        .filter(m => m.players.team1.includes(player.id) || m.players.team2.includes(player.id))
+                                        .sort((a, b) => b.date - a.date)
+                                        .slice(0, 10)
+                                        .reverse();
+
+                                    const dots = [];
+                                    for (let i = 0; i < 10; i++) {
+                                        const m = myLastMatches[i];
+                                        if (!m) {
+                                            dots.push(<div key={i} className="w-3 h-3 rounded-full bg-white/5 border border-white/5" />);
+                                        } else {
+                                            const isT1 = m.players.team1.includes(player.id);
+                                            const win = (isT1 && m.score.team1 > m.score.team2) || (!isT1 && m.score.team2 > m.score.team1);
+                                            const draw = m.score.team1 === m.score.team2;
+
+                                            dots.push(
+                                                <div key={i} className={cn(
+                                                    "w-3 h-3 rounded-full border shadow-sm",
+                                                    win ? "bg-primary border-primary/50 shadow-primary/20" :
+                                                        draw ? "bg-gray-500 border-gray-400/50 shadow-gray-500/20" :
+                                                            "bg-red-500 border-red-400/50 shadow-red-500/20"
+                                                )} />
+                                            );
+                                        }
+                                    }
+                                    return dots;
+                                })()}
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Line 2: Detailed Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                        {/* Effectiveness */}
+                        <Card glass className="p-3 border-primary/20 bg-gradient-to-br from-primary/10 to-transparent flex flex-col justify-center items-center text-center">
+                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-1">
+                                {currentPlayerWithStats?.derivedStats.matchesPlayed ? Math.round((currentPlayerWithStats.derivedStats.wins / currentPlayerWithStats.derivedStats.matchesPlayed) * 100) : 0}%
+                            </span>
+                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none">Efectividad</p>
+                        </Card>
+
+                        {/* Avg Goals For */}
+                        <Card glass className="p-3 border-accent/20 bg-gradient-to-br from-accent/10 to-transparent flex flex-col justify-center items-center text-center">
+                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-1">
+                                {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsScored / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(1) : '0.0'}
+                            </span>
+                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none">Goles Favor</p>
+                        </Card>
+
+                        {/* Avg Goals Against */}
+                        <Card glass className="p-3 border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent flex flex-col justify-center items-center text-center">
+                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-1">
+                                {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsConceded / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(1) : '0.0'}
+                            </span>
+                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none">Goles Contra</p>
+                        </Card>
+                    </div>
                 </div>
             </section>
 
@@ -248,10 +312,10 @@ export function HomePage({ player }: DashboardProps) {
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <Star className="w-3 h-3 text-yellow-500" /> Líderes de la Comunidad
+                        <Star className="w-3 h-3 text-yellow-500" /> Ranking
                     </h3>
                     <Link to="/stats" className="text-[10px] text-primary hover:underline uppercase font-bold tracking-widest">
-                        Ranking Completo
+                        Ver Todo
                     </Link>
                 </div>
                 <div className="space-y-2">
@@ -268,7 +332,7 @@ export function HomePage({ player }: DashboardProps) {
                                     <span className="font-bold text-sm tracking-tight">{p.name} {p.id === player.id && "(Tú)"}</span>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">
-                                            {p.derivedStats.matchesPlayed} Partidos
+                                            {p.derivedStats.matchesPlayed} PJ
                                         </span>
                                         <div className="w-1 h-1 bg-gray-700 rounded-full" />
                                         <span className="text-[9px] text-primary font-black uppercase tracking-widest">
@@ -277,151 +341,13 @@ export function HomePage({ player }: DashboardProps) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-black/20 px-3 py-1 rounded-lg border border-white/5 text-center min-w-[50px]">
-                                <span className="block font-black text-xs text-primary">{p.derivedStats.wins}W</span>
-                                <span className="text-[8px] text-gray-600 font-bold uppercase">{p.derivedStats.losses}L</span>
-                            </div>
+                            {idx === 0 && <Trophy className="w-5 h-5 text-yellow-500 opacity-50" />}
                         </Card>
                     ))}
                 </div>
             </section>
 
-            {/* Advanced Performance Metrics */}
-            <section className="space-y-4">
-                <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <Activity className="w-3 h-3 text-primary" /> Rendimiento Reciente
-                    </h3>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold italic">Últimos 10 Partidos</span>
-                </div>
-
-                {/* Main Performance Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                    {/* Efficiency Card */}
-                    <Card glass className="p-4 border-primary/20 bg-gradient-to-br from-primary/10 to-transparent relative overflow-hidden group">
-                        <div className="flex justify-between items-start mb-4">
-                            <Target className="w-5 h-5 text-primary opacity-50" />
-                            <div className="bg-primary/20 px-2 py-0.5 rounded text-[8px] font-black uppercase text-primary border border-primary/30">Lvl 1</div>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-3xl font-black font-mono tracking-tighter text-white">
-                                {currentPlayerWithStats?.derivedStats.matchesPlayed ? Math.round((currentPlayerWithStats.derivedStats.wins / currentPlayerWithStats.derivedStats.matchesPlayed) * 100) : 0}%
-                            </span>
-                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none">Efectividad Total</p>
-                        </div>
-                    </Card>
-
-                    {/* Goals Average Card */}
-                    <Card glass className="p-4 border-accent/20 bg-gradient-to-br from-accent/10 to-transparent relative overflow-hidden group">
-                        <div className="flex justify-between items-start mb-4">
-                            <Trophy className="w-5 h-5 text-accent opacity-50" />
-                            <div className="bg-accent/20 px-2 py-0.5 rounded text-[8px] font-black uppercase text-accent border border-accent/30">Promedio</div>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-3xl font-black font-mono tracking-tighter text-white">
-                                {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsScored / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(1) : '0.0'}
-                            </span>
-                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none">Goles por Partido</p>
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Form and Detailed Stats */}
-                <Card glass className="p-5 border-white/5 bg-white/[0.02]">
-                    <div className="space-y-6">
-                        {/* 10 Match Form */}
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-end">
-                                <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Estado de Forma</label>
-                                <div className="flex gap-1">
-                                    {(() => {
-                                        const myLastMatches = [...matches]
-                                            .filter(m => m.players.team1.includes(player.id) || m.players.team2.includes(player.id))
-                                            .sort((a, b) => b.date - a.date)
-                                            .slice(0, 10)
-                                            .reverse();
-
-                                        const dots = [];
-                                        for (let i = 0; i < 10; i++) {
-                                            const m = myLastMatches[i];
-                                            if (!m) {
-                                                dots.push(<div key={i} className="w-3 h-3 rounded-full bg-white/5 border border-white/5" />);
-                                            } else {
-                                                const isT1 = m.players.team1.includes(player.id);
-                                                const win = (isT1 && m.score.team1 > m.score.team2) || (!isT1 && m.score.team2 > m.score.team1);
-                                                const draw = m.score.team1 === m.score.team2;
-
-                                                dots.push(
-                                                    <div key={i} className={cn(
-                                                        "w-3 h-3 rounded-full border shadow-sm",
-                                                        win ? "bg-primary border-primary/50 shadow-primary/20" :
-                                                            draw ? "bg-gray-500 border-gray-400/50 shadow-gray-500/20" :
-                                                                "bg-red-500 border-red-400/50 shadow-red-500/20"
-                                                    )} />
-                                                );
-                                            }
-                                        }
-                                        return dots;
-                                    })()}
-                                </div>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
-                                <div className="text-center space-y-1">
-                                    <div className="flex items-center justify-center gap-1 text-primary mb-1">
-                                        <CheckCircle2 className="w-3 h-3" />
-                                        <span className="text-[10px] font-black uppercase tracking-tighter">WINs</span>
-                                    </div>
-                                    <span className="text-xl font-black font-mono text-white">{currentPlayerWithStats?.derivedStats.wins || 0}</span>
-                                </div>
-                                <div className="text-center space-y-1 border-x border-white/5">
-                                    <div className="flex items-center justify-center gap-1 text-gray-500 mb-1">
-                                        <MinusCircle className="w-3 h-3" />
-                                        <span className="text-[10px] font-black uppercase tracking-tighter">Draws</span>
-                                    </div>
-                                    <span className="text-xl font-black font-mono text-white">{currentPlayerWithStats?.derivedStats.draws || 0}</span>
-                                </div>
-                                <div className="text-center space-y-1">
-                                    <div className="flex items-center justify-center gap-1 text-red-500 mb-1">
-                                        <XCircle className="w-3 h-3" />
-                                        <span className="text-[10px] font-black uppercase tracking-tighter">Lost</span>
-                                    </div>
-                                    <span className="text-xl font-black font-mono text-white">{currentPlayerWithStats?.derivedStats.losses || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Average Section */}
-                        <div className="grid grid-cols-2 gap-4 bg-black/20 p-4 rounded-2xl border border-white/5">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-primary/10 rounded-xl">
-                                    <Target className="w-4 h-4 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest leading-none mb-1">Favor</p>
-                                    <p className="text-xs font-bold text-white leading-none">
-                                        {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsScored / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(2) : '0.00'}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-red-500/10 rounded-xl">
-                                    <Shield className="w-4 h-4 text-red-400" />
-                                </div>
-                                <div>
-                                    <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest leading-none mb-1">Contra</p>
-                                    <p className="text-xs font-bold text-white leading-none">
-                                        {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsConceded / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(2) : '0.00'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-            </section>
-
-            {/* Quick Access to Social */}
+            {/* Community */}
             <Link to="/friends">
                 <Card className="p-4 flex items-center justify-between border-white/10 hover:border-primary/50 transition-all bg-gradient-to-r from-transparent to-primary/5">
                     <div className="flex items-center gap-4">
@@ -430,7 +356,7 @@ export function HomePage({ player }: DashboardProps) {
                         </div>
                         <div>
                             <p className="font-bold text-sm tracking-tight italic uppercase">Comunidad</p>
-                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Tienes {myFriends.length} amigos registrados</p>
+                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Amigos y Jugadores</p>
                         </div>
                     </div>
                     <ArrowUpRight className="w-5 h-5 text-primary/50" />

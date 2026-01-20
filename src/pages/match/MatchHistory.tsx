@@ -6,6 +6,8 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/utils';
 import type { Match, Player, AuditLogEntry } from '../../types';
+import { useAdvancedStats } from '../../hooks/useAdvancedStats';
+import { useTournaments } from '../../hooks/useTournaments';
 
 interface MatchHistoryProps {
     currentUser: Player;
@@ -14,11 +16,15 @@ interface MatchHistoryProps {
 export function MatchHistory({ currentUser }: MatchHistoryProps) {
     const navigate = useNavigate();
     const { matches, deleteMatch, getPlayer, updateMatch } = useData();
+    const { tournaments } = useTournaments();
+    const stats = useAdvancedStats(currentUser.id);
+
     const [editingMatch, setEditingMatch] = useState<Match | null>(null);
     const [showAuditFor, setShowAuditFor] = useState<string | null>(null);
 
     // View States
     const [activeTab, setActiveTab] = useState<'total' | 'h2h'>('total');
+
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | '1v1' | '2v2'>('all');
 
@@ -61,10 +67,6 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
                 return allPlayers.includes(currentUser.id) && allPlayers.includes(selectedPlayerId);
             });
         } else if (activeTab === 'total') {
-            // In total view, we still only show matches where the current user participated?
-            // User requested "historial total", usually means all matches involving them.
-            // But if they want ALL matches of the app, we can just not filter by user.
-            // Let's stick to matches where the user participated for a better personal experience.
             result = result.filter(m => [...m.players.team1, ...m.players.team2].includes(currentUser.id));
         }
 
@@ -124,6 +126,13 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
         }
     };
 
+    // Calculate Tournament Wins
+    const tournamentsWon = useMemo(() => {
+        return tournaments.filter(t =>
+            t.status === 'completed' && t.winner === currentUser.id
+        ).length;
+    }, [tournaments, currentUser.id]);
+
     return (
         <div className="space-y-6 pb-20">
             {/* Header */}
@@ -136,12 +145,96 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
                         <h2 className="text-2xl font-bold font-heading bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent uppercase tracking-tighter italic">
                             Historial
                         </h2>
-                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest italic">Registros de partidos</p>
+                        <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest italic">Tus Estadísticas</p>
                     </div>
                 </div>
                 <div className="bg-white/5 p-2 rounded-xl border border-white/5">
                     <Calendar className="w-5 h-5 text-primary" />
                 </div>
+            </div>
+
+            {/* SUMMARY DASHBOARD */}
+            <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-4">
+                {/* Match Stats */}
+                <Card glass className="p-4 bg-gradient-to-br from-white/[0.05] to-transparent border-t border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Trophy className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Partidos Jugados</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black text-white tracking-tight">{stats.matchesPlayed}</span>
+                                <span className="text-xs text-gray-500 font-medium">Total</span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-black/20 p-2 rounded-lg backdrop-blur-sm">
+                            <div className="flex-1 text-center border-r border-white/10">
+                                <span className="text-green-400 block text-lg leading-none">{stats.wins}</span>
+                                <span className="text-[8px] text-gray-500">Vic</span>
+                            </div>
+                            <div className="flex-1 text-center border-r border-white/10">
+                                <span className="text-gray-300 block text-lg leading-none">{stats.draws}</span>
+                                <span className="text-[8px] text-gray-500">Emp</span>
+                            </div>
+                            <div className="flex-1 text-center">
+                                <span className="text-red-400 block text-lg leading-none">{stats.losses}</span>
+                                <span className="text-[8px] text-gray-500">Der</span>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Goal Stats */}
+                <Card glass className="p-4 bg-gradient-to-br from-white/[0.05] to-transparent border-t border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Trophy className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-3">
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Goles Totales</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-4xl font-black text-white tracking-tight">{stats.totalGoalsScored}</span>
+                                <span className="text-xs text-gray-500 font-medium">GF</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5 bg-black/20 p-2 rounded-lg backdrop-blur-sm">
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                                <span className="text-gray-400">Promedio</span>
+                                <span className="text-primary text-sm">{stats.matchesPlayed > 0 ? (stats.totalGoalsScored / stats.matchesPlayed).toFixed(1) : 0}</span>
+                            </div>
+                            <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary" style={{ width: '60%' }} />
+                                {/* Static width for visual, ideally calculated based on max or ratio */}
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] uppercase font-bold tracking-wider pt-1">
+                                <span className="text-gray-500">Recibidos</span>
+                                <span className="text-red-400">-{stats.totalGoalsConceded}</span>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Tournament Wins */}
+                <Card glass className="p-4 bg-gradient-to-br from-white/[0.05] to-transparent border-t border-white/10 relative overflow-hidden group col-span-2">
+                    <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Trophy className="w-12 h-12 text-yellow-500" />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-yellow-500/20 p-3 rounded-full border border-yellow-500/20">
+                            <Trophy className="w-6 h-6 text-yellow-500" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Torneos Ganados</p>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black text-white tracking-tight">{tournamentsWon}</span>
+                                <span className="text-xs text-gray-500 font-medium">Campeonatos</span>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
             </div>
 
             {/* Tab Switcher */}
