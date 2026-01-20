@@ -1,28 +1,154 @@
-import { useState } from 'react';
-import type { Tournament } from '../types';
-
-const INITIAL_TOURNAMENTS: Tournament[] = [];
+import { useData } from '../context/DataContext';
+import type { Tournament, Match } from '../types';
 
 export function useTournaments() {
-    const [tournaments, setTournaments] = useState<Tournament[]>(INITIAL_TOURNAMENTS);
+    const { tournaments, addTournament, matches } = useData();
 
-    const createTournament = (name: string, type: 'league' | 'knockout', participants: string[]) => {
-        const newTournament: Tournament = {
-            id: Math.random().toString(36).substr(2, 9),
-            name,
-            type,
-            status: 'active',
-            participants,
-            matches: [], // We would generate the fixture here
-            createdAt: Date.now()
-        };
+    const generateLeagueFixtures = (participants: string[]) => {
+        const fixtures: { team1: string[], team2: string[] }[] = [];
+        const n = participants.length;
+        const playersList = [...participants];
 
-        // Simple fixture generation logic could go here
-        // For now, just creating the tournament object
+        if (n % 2 !== 0) {
+            playersList.push('BYE'); // Dummy player for odd number of participants
+        }
 
-        setTournaments((prev) => [newTournament, ...prev]);
-        return newTournament;
+        const numRounds = playersList.length - 1;
+        const matchesPerRound = playersList.length / 2;
+
+        for (let round = 0; round < numRounds; round++) {
+            for (let i = 0; i < matchesPerRound; i++) {
+                const home = playersList[i];
+                const away = playersList[playersList.length - 1 - i];
+
+                if (home !== 'BYE' && away !== 'BYE') {
+                    fixtures.push({
+                        team1: [home],
+                        team2: [away]
+                    });
+                }
+            }
+            // Rotate players
+            playersList.splice(1, 0, playersList.pop()!);
+        }
+
+        return fixtures;
     };
 
-    return { tournaments, createTournament };
+    const generateKnockoutFixtures = (participants: string[]) => {
+        // 1. Pad to power of 2
+        const n = participants.length;
+        let power = 1;
+        while (power < n) power *= 2;
+
+        const paddedParticipants = [...participants];
+        while (paddedParticipants.length < power) {
+            paddedParticipants.push('BYE');
+        }
+
+        // 2. Generate Round 1 (Filled)
+        const fixtures: { team1: string[], team2: string[] }[] = [];
+        const totalParticipants = paddedParticipants.length;
+
+        for (let i = 0; i < totalParticipants; i += 2) {
+            fixtures.push({
+                team1: [paddedParticipants[i]],
+                team2: [paddedParticipants[i + 1]]
+            });
+        }
+
+        // 3. Generate Future Rounds (Empty slots)
+        // Total matches = N - 1. We have added N/2 (Round 1).
+        const remainingMatches = (totalParticipants - 1) - fixtures.length;
+        for (let i = 0; i < remainingMatches; i++) {
+            fixtures.push({ team1: [], team2: [] });
+        }
+
+        return fixtures;
+    };
+
+    const createTournamentWithFixtures = async (name: string, type: 'league' | 'knockout', participants: string[], createdBy: string) => {
+        const tournament = await addTournament(name, type, participants, createdBy);
+
+        // If league, we might want to pre-generate or at least know how many matches
+        // For now, the creation in DataContext is enough, and fixtures are derived or generated on the fly
+        // in a more advanced version. But the plan said "trigger fixture generation on creation".
+        // Since we don't have a "Fixture" collection yet, and Match has tournamentId, 
+        // we can just return the tournament and let the UI handle it or generate matches.
+
+        return tournament;
+    };
+
+    const getTournamentMatches = (tournamentId: string) => {
+        return matches.filter(m => m.tournamentId === tournamentId);
+    };
+
+    const calculateLeagueStandings = (tournamentId: string) => {
+        const tournament = tournaments.find(t => t.id === tournamentId);
+        if (!tournament) return [];
+
+        const tournamentMatches = getTournamentMatches(tournamentId);
+
+        const standings = tournament.participants.map(playerId => {
+            const playerMatches = tournamentMatches.filter(m =>
+                m.players.team1.includes(playerId) || m.players.team2.includes(playerId)
+            );
+
+            let wins = 0;
+            let draws = 0;
+            let losses = 0;
+            let goalsScored = 0;
+            let goalsConceded = 0;
+
+            playerMatches.forEach(match => {
+                const isTeam1 = match.players.team1.includes(playerId);
+                const isTeam2 = match.players.team2.includes(playerId);
+                const myScore = isTeam1 ? match.score.team1 : match.score.team2;
+                const opponentScore = isTeam1 ? match.score.team2 : match.score.team1;
+
+                goalsScored += myScore;
+                goalsConceded += opponentScore;
+
+                if (match.endedBy === 'regular') {
+                    if (myScore > opponentScore) wins++;
+                    else if (myScore < opponentScore) losses++;
+                    else draws++;
+                } else if (match.endedBy === 'penalties') {
+                    const amIWinner = (isTeam1 && match.penaltyWinner === 1) || (isTeam2 && match.penaltyWinner === 2);
+                    if (amIWinner) wins++; else losses++;
+                } else if (match.endedBy === 'forfeit') {
+                    const amILoser = (isTeam1 && match.forfeitLoser === 1) || (isTeam2 && match.forfeitLoser === 2);
+                    if (amILoser) losses++; else wins++;
+                }
+            });
+
+            return {
+                playerId,
+                played: playerMatches.length,
+                wins,
+                draws,
+                losses,
+                goalsScored,
+                goalsConceded,
+                points: (wins * 3) + draws
+            };
+        });
+
+        return standings.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const diffA = a.goalsScored - a.goalsConceded;
+            const diffB = b.goalsScored - b.goalsConceded;
+            if (diffB !== diffA) return diffB - diffA;
+            return b.goalsScored - a.goalsScored;
+        });
+    };
+
+    return {
+        tournaments,
+        createTournament: createTournamentWithFixtures,
+        getTournamentMatches,
+        calculateLeagueStandings,
+        generateLeagueFixtures,
+        generateKnockoutFixtures
+    };
 }

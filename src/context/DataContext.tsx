@@ -9,11 +9,12 @@ import {
     arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import type { Player, Match, AuditLogEntry } from '../types';
+import type { Player, Match, AuditLogEntry, Tournament } from '../types';
 
 interface DataContextType {
     players: Player[];
     matches: Match[];
+    tournaments: Tournament[];
     loading: boolean;
     addMatch: (match: Match) => Promise<void>;
     updateMatch: (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => Promise<void>;
@@ -25,6 +26,9 @@ interface DataContextType {
     removePlayerFriend: (hostId: string, friendId: string) => Promise<void>;
     getPlayer: (id: string) => Player | undefined;
     recalculateAllStats: () => Promise<void>;
+    addTournament: (name: string, type: 'league' | 'knockout', participants: string[], createdBy: string) => Promise<Tournament>;
+    updateTournament: (tournamentId: string, updates: Partial<Tournament>) => Promise<void>;
+    deleteTournament: (tournamentId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -32,15 +36,17 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export function DataProvider({ children }: { children: ReactNode }) {
     const [players, setPlayers] = useState<Player[]>([]);
     const [matches, setMatches] = useState<Match[]>([]);
+    const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Initial Load & Realtime Sync
     useEffect(() => {
         let playersLoaded = false;
         let matchesLoaded = false;
+        let tournamentsLoaded = false;
 
         const checkLoading = () => {
-            if (playersLoaded && matchesLoaded) {
+            if (playersLoaded && matchesLoaded && tournamentsLoaded) {
                 setLoading(false);
             }
         };
@@ -59,9 +65,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
             checkLoading();
         });
 
+        const unsubscribeTournaments = onSnapshot(collection(db, 'tournaments'), (snapshot) => {
+            const loadedTournaments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tournament));
+            setTournaments(loadedTournaments);
+            tournamentsLoaded = true;
+            checkLoading();
+        });
+
         return () => {
             unsubscribePlayers();
             unsubscribeMatches();
+            unsubscribeTournaments();
         };
     }, []);
 
@@ -69,13 +83,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return JSON.parse(JSON.stringify(data));
     };
 
-    const addPlayer = async (name: string, avatar: string, photoURL?: string, pin?: string) => {
+    const addPlayer = async (name: string, avatar: string, photoURL?: string, pin: string = '1234') => {
         try {
             const rawPlayer = {
                 name,
                 avatar,
                 photoURL,
-                pin,
+                pin, // Now required
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
                 createdAt: Date.now(),
@@ -231,6 +245,47 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await updateStatsForPlayers(matchToRemove, true);
     };
 
+    const addTournament = async (name: string, type: 'league' | 'knockout', participants: string[], createdBy: string) => {
+        try {
+            const rawTournament = {
+                name,
+                type,
+                status: 'draft' as const, // Start as draft/pending fixture
+                participants,
+                matches: [],
+                createdBy, // Admin/Host
+                createdAt: Date.now()
+            };
+            const cleanedTournament = cleanData(rawTournament);
+            const docRef = await addDoc(collection(db, 'tournaments'), cleanedTournament);
+            const newTournament = { id: docRef.id, ...cleanedTournament };
+            return newTournament as Tournament;
+        } catch (error) {
+            console.error('❌ Error creating tournament:', error);
+            throw error;
+        }
+    };
+
+    const updateTournament = async (tournamentId: string, updates: Partial<Tournament>) => {
+        try {
+            const tournamentRef = doc(db, 'tournaments', tournamentId);
+            const cleanedUpdates = cleanData(updates);
+            await updateDoc(tournamentRef, cleanedUpdates);
+        } catch (error) {
+            console.error('❌ Error updating tournament:', error);
+            throw error;
+        }
+    };
+
+    const deleteTournament = async (tournamentId: string) => {
+        try {
+            await deleteDoc(doc(db, 'tournaments', tournamentId));
+        } catch (error) {
+            console.error('❌ Error deleting tournament:', error);
+            throw error;
+        }
+    };
+
     const recalculateAllStats = async () => {
         const { writeBatch, collection: fsCollection, getDocs } = await import('firebase/firestore');
         const batch = writeBatch(db);
@@ -260,6 +315,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         <DataContext.Provider value={{
             players,
             matches,
+            tournaments,
             loading,
             addMatch,
             updateMatch,
@@ -270,7 +326,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             updatePlayerFriends,
             removePlayerFriend,
             getPlayer,
-            recalculateAllStats
+            recalculateAllStats,
+            addTournament,
+            updateTournament,
+            deleteTournament
         }}>
             {children}
         </DataContext.Provider>

@@ -33,7 +33,9 @@ export function usePlayers() {
         endedBy: any,
         penaltyWinner?: 1 | 2,
         forfeitLoser?: 1 | 2,
-        dateParam?: number
+        dateParam?: number,
+        tournamentId?: string,
+        tournamentFixtureSlot?: number
     ) => {
         const allParticipants = [...team1, ...team2];
 
@@ -46,7 +48,9 @@ export function usePlayers() {
             score: { team1: score1, team2: score2 },
             endedBy,
             penaltyWinner,
-            forfeitLoser
+            forfeitLoser,
+            tournamentId,
+            tournamentFixtureSlot
         });
 
         // Auto-friendship

@@ -6,8 +6,13 @@ import { useTournaments } from '../../hooks/useTournaments';
 import { useSession } from '../../context/SessionContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import type { Player } from '../../types';
 
-export function NewTournament() {
+interface NewTournamentProps {
+    currentUser: Player;
+}
+
+export function NewTournament({ currentUser }: NewTournamentProps) {
     const navigate = useNavigate();
     const { players } = usePlayers();
     const { createTournament } = useTournaments();
@@ -32,10 +37,21 @@ export function NewTournament() {
         }
     };
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!name || selectedPlayers.length < 2) return;
-        const newTournament = createTournament(name, type, selectedPlayers);
-        navigate(`/tournament/${newTournament.id}`);
+        console.log('🎮 Creating tournament:', { name, type, selectedPlayers });
+        try {
+            const newTournament = await createTournament(name, type, selectedPlayers, currentUser.id);
+            console.log('✅ Tournament created:', newTournament);
+            // Pass tournament via state to avoid Firebase sync delay
+            console.log('🚀 Navigating to:', `/tournament/${newTournament.id}`);
+            navigate(`/tournament/${newTournament.id}`, {
+                state: { tournament: newTournament }
+            });
+        } catch (error) {
+            console.error('❌ Error creating tournament:', error);
+            alert('Error al crear el torneo');
+        }
     };
 
     return (

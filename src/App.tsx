@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
+
 import { SessionProvider } from './context/SessionContext';
 import { Layout } from './components/layout/Layout';
 import { ProfileSelection } from './pages/profile/ProfileSelection';
@@ -41,7 +41,12 @@ function MainApp() {
       const savedId = localStorage.getItem('fifa_tracker_current_player_id');
       if (savedId) {
         const p = players.find(p => p.id === savedId);
-        if (p) setCurrentPlayer(p);
+        if (p && p.pin) {
+          setCurrentPlayer(p);
+        } else {
+          // If player exists but has no PIN, force re-login/setup
+          localStorage.removeItem('fifa_tracker_current_player_id');
+        }
       }
     }
   }, [players, loading, currentPlayer]);
@@ -100,8 +105,8 @@ function MainApp() {
                 <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
                 <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
                 <Route path="/match/new" element={<NewMatch />} />
-                <Route path="/tournament/new" element={<NewTournament />} />
-                <Route path="/tournament/:id" element={<TournamentDetails />} />
+                <Route path="/tournament/new" element={<NewTournament currentUser={currentPlayer} />} />
+                <Route path="/tournament/:id" element={<TournamentDetails currentUser={currentPlayer} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
@@ -115,15 +120,13 @@ function MainApp() {
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <DataProvider>
-            <SessionProvider>
-              <MainApp />
-            </SessionProvider>
-          </DataProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <DataProvider>
+          <SessionProvider>
+            <MainApp />
+          </SessionProvider>
+        </DataProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

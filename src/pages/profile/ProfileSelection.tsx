@@ -5,6 +5,7 @@ import { usePlayers } from '../../hooks/usePlayers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PhotoCapture } from '../../components/PhotoCapture';
+import { AvatarSelector } from '../../components/profile/AvatarSelector';
 import type { Player } from '../../types';
 
 interface ProfileSelectionProps {
@@ -12,7 +13,7 @@ interface ProfileSelectionProps {
 }
 
 export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
-    const { players, loading, createPlayer, deletePlayer } = usePlayers();
+    const { players, loading, createPlayer, deletePlayer, updatePlayer } = usePlayers();
     const [isCreating, setIsCreating] = useState(false);
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
     const [newName, setNewName] = useState('');
@@ -25,12 +26,20 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const [loginPin, setLoginPin] = useState('');
     const [loginError, setLoginError] = useState(false);
 
+    // PIN Setup flow
+    const [setupPin, setSetupPin] = useState('');
+    const [confirmSetupPin, setConfirmSetupPin] = useState('');
+
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newName.trim()) return;
+        if (newPin.length < 4) {
+            alert('El PIN debe tener al menos 4 dígitos');
+            return;
+        }
 
         try {
-            const player = await createPlayer(newName, selectedAvatar, photoURL, newPin || undefined);
+            const player = await createPlayer(newName, selectedAvatar, photoURL, newPin);
             onSelect(player);
         } catch (error) {
             console.error('Error creating player:', error);
@@ -56,7 +65,31 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
         setShowPhotoCapture(false);
     };
 
-    const AVATARS = ['🦁', '🚀', '🦖', '⚽', '🎮', '🔥', '💎', '👻'];
+    const handlePinSetup = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedPlayerForLogin) return;
+
+        if (setupPin.length < 4) {
+            alert('El PIN debe tener al menos 4 dígitos');
+            return;
+        }
+
+        if (setupPin !== confirmSetupPin) {
+            alert('Los PINs no coinciden');
+            return;
+        }
+
+        try {
+            await updatePlayer(selectedPlayerForLogin.id, { pin: setupPin });
+            const updated = { ...selectedPlayerForLogin, pin: setupPin };
+            onSelect(updated);
+        } catch (error) {
+            console.error('Error setting PIN:', error);
+            alert('Error al guardar el PIN');
+        }
+    };
+
+
 
     if (loading) return <div className="flex h-screen items-center justify-center text-primary animate-pulse uppercase font-bold tracking-widest">Cargando Jugadores...</div>;
 
@@ -84,36 +117,80 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold font-heading">{selectedPlayerForLogin.name}</h2>
-                                    <p className="text-gray-400 text-sm">Introduce tu PIN de seguridad</p>
+                                    <p className="text-gray-400 text-sm">
+                                        {!selectedPlayerForLogin.pin ? 'Configura tu PIN de seguridad' : 'Introduce tu PIN de seguridad'}
+                                    </p>
                                 </div>
                             </div>
 
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <div className="relative">
-                                    <input
-                                        type="password"
-                                        inputMode="numeric"
-                                        pattern="[0-9]*"
-                                        value={loginPin}
-                                        onChange={(e) => setLoginPin(e.target.value)}
-                                        className={`w-full bg-white/5 border-2 rounded-2xl px-4 py-4 text-center text-3xl font-mono tracking-[1em] focus:outline-none transition-all ${loginError ? 'border-red-500 animate-shake' : 'border-white/10 focus:border-primary'}`}
-                                        placeholder="****"
-                                        autoFocus
-                                    />
-                                    {loginError && <p className="text-red-500 text-xs mt-2 uppercase font-bold tracking-widest">PIN Incorrecto</p>}
-                                </div>
-                                <div className="flex gap-3">
-                                    <Button type="button" variant="ghost" className="flex-1" onClick={() => {
-                                        setSelectedPlayerForLogin(null);
-                                        setLoginPin('');
-                                    }}>
-                                        Volver
-                                    </Button>
-                                    <Button type="submit" glow className="flex-1" disabled={loginPin.length < 4}>
-                                        ENTRAR
-                                    </Button>
-                                </div>
-                            </form>
+                            {!selectedPlayerForLogin.pin ? (
+                                <form onSubmit={handlePinSetup} className="space-y-4">
+                                    <div className="space-y-3">
+                                        <input
+                                            type="password"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            value={setupPin}
+                                            onChange={(e) => setSetupPin(e.target.value.replace(/\D/g, ''))}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] focus:outline-none focus:border-primary transition-colors"
+                                            placeholder="PIN"
+                                            autoFocus
+                                            required
+                                        />
+                                        <input
+                                            type="password"
+                                            inputMode="numeric"
+                                            maxLength={6}
+                                            value={confirmSetupPin}
+                                            onChange={(e) => setConfirmSetupPin(e.target.value.replace(/\D/g, ''))}
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] focus:outline-none focus:border-primary transition-colors"
+                                            placeholder="Confirmar"
+                                            required
+                                        />
+                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Mínimo 4 dígitos</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Button type="button" variant="ghost" className="flex-1" onClick={() => {
+                                            setSelectedPlayerForLogin(null);
+                                            setSetupPin('');
+                                            setConfirmSetupPin('');
+                                        }}>
+                                            Cancelar
+                                        </Button>
+                                        <Button type="submit" glow className="flex-1" disabled={setupPin.length < 4 || setupPin !== confirmSetupPin}>
+                                            GUARDAR PIN
+                                        </Button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleLogin} className="space-y-4">
+                                    <div className="relative">
+                                        <input
+                                            type="password"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            value={loginPin}
+                                            onChange={(e) => setLoginPin(e.target.value)}
+                                            className={`w-full bg-white/5 border-2 rounded-2xl px-4 py-4 text-center text-3xl font-mono tracking-[1em] focus:outline-none transition-all ${loginError ? 'border-red-500 animate-shake' : 'border-white/10 focus:border-primary'}`}
+                                            placeholder="****"
+                                            autoFocus
+                                        />
+                                        {loginError && <p className="text-red-500 text-xs mt-2 uppercase font-bold tracking-widest">PIN Incorrecto</p>}
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Button type="button" variant="ghost" className="flex-1" onClick={() => {
+                                            setSelectedPlayerForLogin(null);
+                                            setLoginPin('');
+
+                                        }}>
+                                            Volver
+                                        </Button>
+                                        <Button type="submit" glow className="flex-1" disabled={loginPin.length < 4}>
+                                            ENTRAR
+                                        </Button>
+                                    </div>
+                                </form>
+                            )}
                         </Card>
                     </motion.div>
                 ) : !isCreating ? (
@@ -137,7 +214,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     key={player.id}
                                     glass
                                     className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6 relative border-white/5 bg-white/[0.02]"
-                                    onClick={() => player.pin ? setSelectedPlayerForLogin(player) : onSelect(player)}
+                                    onClick={() => setSelectedPlayerForLogin(player)}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
@@ -245,34 +322,29 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">PIN de Seguridad (4 dígitos)</label>
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">PIN de Seguridad (Requerido)</label>
                                         <input
                                             type="password"
                                             inputMode="numeric"
-                                            maxLength={4}
+                                            maxLength={6}
                                             value={newPin}
                                             onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, ''))}
                                             className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-accent transition-colors text-center font-mono text-2xl tracking-[0.5em] placeholder-white/5"
                                             placeholder="****"
+                                            required
                                         />
-                                        <p className="text-[9px] text-gray-500 text-center italic">Usa un PIN opcional para que nadie entre a tu perfil.</p>
+                                        <p className="text-[9px] text-gray-500 text-center italic">Mínimo 4 dígitos para proteger tu perfil.</p>
                                     </div>
                                 </div>
 
                                 {!photoURL && (
                                     <div className="space-y-2">
                                         <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">Avatar</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {AVATARS.map(emoji => (
-                                                <button
-                                                    type="button"
-                                                    key={emoji}
-                                                    onClick={() => setSelectedAvatar(emoji)}
-                                                    className={`text-2xl p-3 rounded-xl transition-all ${selectedAvatar === emoji ? 'bg-primary/20 ring-2 ring-primary scale-110' : 'bg-white/5 hover:bg-white/10'}`}
-                                                >
-                                                    {emoji}
-                                                </button>
-                                            ))}
+                                        <div className="w-full">
+                                            <AvatarSelector
+                                                selectedAvatar={selectedAvatar}
+                                                onSelect={setSelectedAvatar}
+                                            />
                                         </div>
                                     </div>
                                 )}
@@ -281,7 +353,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsCreating(false)}>
                                         Cancelar
                                     </Button>
-                                    <Button type="submit" glow className="flex-1" disabled={!newName.trim()}>
+                                    <Button type="submit" glow className="flex-1" disabled={!newName.trim() || newPin.length < 4}>
                                         CREAR
                                     </Button>
                                 </div>

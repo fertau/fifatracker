@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, Clock, MoreHorizontal, CheckCircle2, XCircle, MinusCircle, Target, Shield } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
+import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
-import { cn } from '../lib/utils';
-import type { Player, PlayerStats, Match } from '../types';
+import { Button } from '../components/ui/Button';
+import { cn, calculatePlayerScore } from '../lib/utils';
+import type { Player, Match } from '../types';
 
 interface DashboardProps {
     player: Player;
@@ -12,68 +15,14 @@ interface DashboardProps {
 
 export function HomePage({ player }: DashboardProps) {
     const { players, getFriendsOf } = usePlayers();
+    const [showAllNews, setShowAllNews] = useState(false);
+
     const { matches } = useData();
 
     const myFriends = getFriendsOf(player.id);
 
-    // DYNAMIC STATS CALCULATION
-    const playersWithDerivedStats = players.map(p => {
-        const myMatches = matches.filter(m =>
-            m.players.team1.includes(p.id) || m.players.team2.includes(p.id)
-        );
-
-        let wins = 0;
-        let draws = 0;
-        let losses = 0;
-        let goalsScored = 0;
-        let goalsConceded = 0;
-
-        myMatches.forEach(m => {
-            const isTeam1 = m.players.team1.includes(p.id);
-            const isTeam2 = m.players.team2.includes(p.id);
-            const myScore = isTeam1 ? m.score.team1 : m.score.team2;
-            const oppScore = isTeam1 ? m.score.team2 : m.score.team1;
-
-            goalsScored += myScore;
-            goalsConceded += oppScore;
-
-            if (m.endedBy === 'regular') {
-                if (myScore > oppScore) wins++;
-                else if (myScore < oppScore) losses++;
-                else draws++;
-            } else if (m.endedBy === 'penalties') {
-                const amIWinner = (isTeam1 && m.penaltyWinner === 1) || (isTeam2 && m.penaltyWinner === 2);
-                if (amIWinner) wins++; else losses++;
-            } else if (m.endedBy === 'forfeit') {
-                const amILoser = (isTeam1 && m.forfeitLoser === 1) || (isTeam2 && m.forfeitLoser === 2);
-                if (amILoser) losses++; else wins++;
-            }
-        });
-
-        const derivedStats: PlayerStats = {
-            matchesPlayed: myMatches.length,
-            wins,
-            draws,
-            losses,
-            goalsScored,
-            goalsConceded
-        };
-
-        return {
-            ...p,
-            derivedStats
-        };
-    });
-
-    // Sort players by win rate for ranking
-    const rankedPlayers = [...playersWithDerivedStats].sort((a, b) => {
-        const rateA = a.derivedStats.matchesPlayed > 0 ? a.derivedStats.wins / a.derivedStats.matchesPlayed : 0;
-        const rateB = b.derivedStats.matchesPlayed > 0 ? b.derivedStats.wins / b.derivedStats.matchesPlayed : 0;
-        if (rateB !== rateA) return rateB - rateA;
-        return b.derivedStats.goalsScored - a.derivedStats.goalsScored; // Tie-breaker: goals
-    });
-
-    const currentPlayerWithStats = playersWithDerivedStats.find(p => p.id === player.id);
+    const { rankedPlayers } = useLeaderboard();
+    const currentPlayerWithStats = rankedPlayers.find(p => p.id === player.id);
     const myRank = rankedPlayers.findIndex(p => p.id === player.id) + 1;
 
     // --- AUTOMATIC SESSION CLUSTERING LOGIC ---
@@ -201,7 +150,7 @@ export function HomePage({ player }: DashboardProps) {
         });
     }
 
-    const topScorer = [...playersWithDerivedStats]
+    const topScorer = [...rankedPlayers]
         .filter(p => p.derivedStats.goalsScored > 0)
         .sort((a, b) => b.derivedStats.goalsScored - a.derivedStats.goalsScored)[0];
 
@@ -242,38 +191,51 @@ export function HomePage({ player }: DashboardProps) {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
-                    {socialNews.length > 0 ? socialNews.map(news => (
-                        <Card key={news.id} glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all p-4">
-                            {/* Visual Indicator Line */}
-                            <div className={cn(
-                                "absolute left-0 top-0 bottom-0 w-1",
-                                news.type === 'session' ? "bg-accent" :
-                                    news.type === 'rank' ? "bg-yellow-500" :
-                                        news.type === 'milestone' ? "bg-purple-500" : "bg-primary"
-                            )} />
+                    {socialNews.length > 0 ? (
+                        <>
+                            {socialNews.slice(0, showAllNews ? undefined : 3).map(news => (
+                                <Card key={news.id} glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all p-4">
+                                    {/* Visual Indicator Line */}
+                                    <div className={cn(
+                                        "absolute left-0 top-0 bottom-0 w-1",
+                                        news.type === 'session' ? "bg-accent" :
+                                            news.type === 'rank' ? "bg-yellow-500" :
+                                                news.type === 'milestone' ? "bg-purple-500" : "bg-primary"
+                                    )} />
 
-                            <div className="flex items-start gap-4">
-                                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform">
-                                    {news.icon}
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">{news.title}</p>
-                                        {news.badge && (
-                                            <span className="text-[8px] bg-white/5 px-2 py-0.5 rounded-full border border-white/10 font-black text-gray-400">
-                                                {news.badge}
-                                            </span>
-                                        )}
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform">
+                                            {news.icon}
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">{news.title}</p>
+                                                {news.badge && (
+                                                    <span className="text-[8px] bg-white/5 px-2 py-0.5 rounded-full border border-white/10 font-black text-gray-400">
+                                                        {news.badge}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-bold text-gray-200 leading-tight">{news.content}</p>
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <span className="text-[9px] text-gray-600 uppercase font-black tracking-widest">{news.time}</span>
+                                            </div>
+                                        </div>
+                                        {news.type === 'rank' && <ArrowUpRight className="w-4 h-4 text-yellow-500 animate-pulse" />}
                                     </div>
-                                    <p className="text-sm font-bold text-gray-200 leading-tight">{news.content}</p>
-                                    <div className="flex items-center gap-2 pt-1">
-                                        <span className="text-[9px] text-gray-600 uppercase font-black tracking-widest">{news.time}</span>
-                                    </div>
-                                </div>
-                                {news.type === 'rank' && <ArrowUpRight className="w-4 h-4 text-yellow-500 animate-pulse" />}
-                            </div>
-                        </Card>
-                    )) : (
+                                </Card>
+                            ))}
+                            {socialNews.length > 3 && (
+                                <Button
+                                    variant="ghost"
+                                    className="w-full text-xs uppercase tracking-widest text-gray-500 hover:text-white"
+                                    onClick={() => setShowAllNews(!showAllNews)}
+                                >
+                                    {showAllNews ? 'Ver menos' : 'Ver más novedades'}
+                                </Button>
+                            )}
+                        </>
+                    ) : (
                         <div className="text-center py-8 bg-white/[0.01] rounded-3xl border border-dashed border-white/5">
                             <MoreHorizontal className="w-8 h-8 mx-auto text-gray-800 mb-2" />
                             <p className="text-xs text-gray-600 italic">No hay actividad reciente para agrupar.</p>
@@ -310,7 +272,7 @@ export function HomePage({ player }: DashboardProps) {
                                         </span>
                                         <div className="w-1 h-1 bg-gray-700 rounded-full" />
                                         <span className="text-[9px] text-primary font-black uppercase tracking-widest">
-                                            {p.derivedStats.matchesPlayed > 0 ? Math.round((p.derivedStats.wins / p.derivedStats.matchesPlayed) * 100) : 0}% Win Rate
+                                            {calculatePlayerScore(p.derivedStats)} PTS
                                         </span>
                                     </div>
                                 </div>

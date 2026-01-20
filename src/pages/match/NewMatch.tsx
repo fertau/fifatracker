@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users, Trophy, ArrowRight, Flag, AlertTriangle, Calendar } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
@@ -10,15 +10,23 @@ import type { Match } from '../../types';
 
 export function NewMatch() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { players, saveMatch } = usePlayers();
     const { session, isSessionActive } = useSession();
 
+    const t1Param = searchParams.get('t1');
+    const t2Param = searchParams.get('t2');
+    const tournamentId = searchParams.get('tournamentId');
+
+    const tournamentFixtureSlot = searchParams.get('tournamentFixtureSlot');
+
     const [gameType, setGameType] = useState<Match['type']>('1v1');
-    const [step, setStep] = useState<'setup' | 'score'>('setup');
+
+    const [step, setStep] = useState<'setup' | 'score'>(t1Param && t2Param ? 'score' : 'setup');
 
     // Selection State
-    const [team1, setTeam1] = useState<string[]>([]);
-    const [team2, setTeam2] = useState<string[]>([]);
+    const [team1, setTeam1] = useState<string[]>(t1Param ? [t1Param] : []);
+    const [team2, setTeam2] = useState<string[]>(t2Param ? [t2Param] : []);
 
     // Score State
     const [score1, setScore1] = useState(0);
@@ -73,10 +81,16 @@ export function NewMatch() {
                     endedBy,
                     penaltyWinner,
                     forfeitLoser,
-                    new Date(matchDate).getTime()
+                    new Date(matchDate).getTime(),
+                    tournamentId || undefined,
+                    tournamentFixtureSlot ? parseInt(tournamentFixtureSlot) : undefined
                 );
             }
-            navigate('/');
+            if (tournamentId) {
+                navigate(`/tournament/${tournamentId}`);
+            } else {
+                navigate('/');
+            }
         } catch (error) {
             console.error('Error saving match:', error);
             alert('Error al guardar el partido. Verifica tu conexión e intenta de nuevo.');

@@ -16,7 +16,7 @@ export interface Player {
     derivedStats?: PlayerStats;
     friends: string[]; // List of Player IDs
     friendRequests?: string[]; // Array of player IDs who sent a request
-    pin?: string; // Optional security PIN
+    pin: string; // Security PIN (required)
     ownerId: string;
     createdAt: number;
 }
@@ -44,6 +44,7 @@ export interface Match {
     penaltyWinner?: 1 | 2; // Team 1 or Team 2
     forfeitLoser?: 1 | 2; // Team 1 or Team 2
     tournamentId?: string;
+    tournamentFixtureSlot?: number; // Index in the tournament fixtures array
     edits?: AuditLogEntry[];
 }
 
@@ -55,6 +56,8 @@ export interface Tournament {
     participants: string[]; // Player IDs
     matches: string[]; // Match IDs
     winner?: string; // Player ID
+    createdBy: string; // Admin ID
+    fixtures?: { team1: string[], team2: string[] }[]; // Persisted fixtures
     createdAt: number;
 }
 

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Trophy, Target, Users as UsersIcon, TrendingUp, Award } from 'lucide-react';
 import { useAdvancedStats } from '../hooks/useAdvancedStats';
+import { useLeaderboard } from '../hooks/useLeaderboard';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import type { Player } from '../types';
@@ -11,6 +12,7 @@ interface StatsPageProps {
 
 export function StatsPage({ player }: StatsPageProps) {
     const stats = useAdvancedStats(player.id);
+    const { rankedPlayers } = useLeaderboard();
 
     return (
         <div className="space-y-6 pb-20">
@@ -21,6 +23,51 @@ export function StatsPage({ player }: StatsPageProps) {
                 </h1>
                 <p className="text-gray-400">{player.name}</p>
             </div>
+
+            {/* Community Ranking Table */}
+            <Card className="overflow-hidden border-white/5 bg-white/[0.02]">
+                <div className="p-4 border-b border-white/5 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    <h3 className="font-bold uppercase tracking-widest text-sm">Ranking Comunidad</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                        <thead>
+                            <tr className="bg-white/5 text-gray-400 uppercase tracking-wider font-bold">
+                                <th className="p-3 text-center">#</th>
+                                <th className="p-3">Jugador</th>
+                                <th className="p-3 text-center">PJ</th>
+                                <th className="p-3 text-center">W</th>
+                                <th className="p-3 text-center">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {rankedPlayers.map((p, idx) => (
+                                <tr key={p.id} className={p.id === player.id ? 'bg-primary/10' : 'hover:bg-white/5'}>
+                                    <td className="p-3 text-center font-mono font-bold text-gray-500">
+                                        {idx + 1}
+                                    </td>
+                                    <td className="p-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg">{p.avatar}</span>
+                                            <span className="font-bold">{p.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-3 text-center text-gray-400 font-mono">
+                                        {p.derivedStats.matchesPlayed}
+                                    </td>
+                                    <td className="p-3 text-center text-green-500 font-mono font-bold">
+                                        {p.derivedStats.wins}
+                                    </td>
+                                    <td className="p-3 text-center font-black font-mono text-primary">
+                                        {p.score}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
 
             {/* Current Streak */}
             {stats.currentStreak.type && (

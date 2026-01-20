@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogOut, ArrowLeft, Camera, User, Palette, CheckCircle2 } from 'lucide-react';
+import { Trash2, LogOut, ArrowLeft, Camera, User, Lock, X } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
-import { useTheme } from '../../context/ThemeContext';
+
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { PhotoCapture } from '../../components/PhotoCapture';
-import { cn } from '../../lib/utils';
+
 import type { Player } from '../../types';
 
 interface ProfilePageProps {
@@ -16,15 +16,15 @@ interface ProfilePageProps {
 
 export function ProfilePage({ player, onLogout }: ProfilePageProps) {
     const { deletePlayer, updatePlayer } = usePlayers();
-    const { theme: currentTheme, setTheme } = useTheme();
     const navigate = useNavigate();
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+    const [showPinChange, setShowPinChange] = useState(false);
+    const [currentPin, setCurrentPin] = useState('');
+    const [newPin, setNewPin] = useState('');
+    const [confirmPin, setConfirmPin] = useState('');
+    const [pinError, setPinError] = useState('');
 
-    const themes = [
-        { id: 'default', name: 'Ultimate Neon', colors: ['#00f3ff', '#b026ff'], description: 'El estilo clásico de FIFA.', badge: 'Original' },
-        { id: 'carbon', name: 'Carbon Elite', colors: ['#ffffff', '#969696'], description: 'Elegancia y sigilo minimalista.', badge: 'Premium' },
-        { id: 'volcanic', name: 'Volcanic Victory', colors: ['#ff3c00', '#ffa500'], description: 'Energía pura y fuego en el campo.', badge: 'Intenso' }
-    ];
+
 
     const handleDelete = async () => {
         if (confirm(`¿Estás seguro de que quieres eliminar permanentemente a ${player.name}? Esta acción no se puede deshacer.`)) {
@@ -45,6 +45,37 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
         } catch (error) {
             console.error('Error updating photo:', error);
             alert('No se pudo actualizar la foto de perfil.');
+        }
+    };
+
+    const handlePinChange = async () => {
+        setPinError('');
+
+        if (currentPin !== player.pin) {
+            setPinError('PIN actual incorrecto');
+            return;
+        }
+
+        if (newPin.length < 4) {
+            setPinError('El nuevo PIN debe tener al menos 4 dígitos');
+            return;
+        }
+
+        if (newPin !== confirmPin) {
+            setPinError('Los PINs no coinciden');
+            return;
+        }
+
+        try {
+            await updatePlayer(player.id, { pin: newPin });
+            setShowPinChange(false);
+            setCurrentPin('');
+            setNewPin('');
+            setConfirmPin('');
+            alert('PIN actualizado correctamente');
+        } catch (error) {
+            console.error('Error updating PIN:', error);
+            setPinError('No se pudo actualizar el PIN');
         }
     };
 
@@ -107,45 +138,21 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                     <h1 className="text-3xl font-bold tracking-tighter font-heading italic uppercase">{player.name}</h1>
                 </div>
 
-                {/* Theme Selector Section */}
-                <div className="pt-6 border-t border-white/5 space-y-4 text-left">
-                    <div className="flex items-center gap-2 px-1">
-                        <Palette className="w-4 h-4 text-primary" />
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Apariencia</h3>
-                    </div>
 
-                    <div className="grid grid-cols-1 gap-2">
-                        {themes.map(t => (
-                            <button
-                                key={t.id}
-                                onClick={() => setTheme(t.id as any)}
-                                className={cn(
-                                    "p-3 rounded-2xl border-2 transition-all flex items-center justify-between group",
-                                    currentTheme === t.id ? "border-primary bg-primary/5" : "border-white/5 bg-white/[0.01] hover:border-white/20"
-                                )}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="flex -space-x-1">
-                                        {t.colors.map((c, i) => (
-                                            <div key={i} className="w-4 h-4 rounded-full border border-background shadow-sm" style={{ backgroundColor: c }} />
-                                        ))}
-                                    </div>
-                                    <div className="flex flex-col text-left">
-                                        <div className="flex items-center gap-2">
-                                            <span className={cn("text-xs font-black uppercase tracking-tight", currentTheme === t.id ? "text-primary" : "text-gray-300")}>
-                                                {t.name}
-                                            </span>
-                                            <span className="text-[8px] bg-white/5 px-1.5 py-0.5 rounded border border-white/5 text-gray-500 font-black tracking-widest uppercase">{t.badge}</span>
-                                        </div>
-                                        <p className="text-[9px] text-gray-600 font-medium leading-none mt-1">{t.description}</p>
-                                    </div>
-                                </div>
-                                {currentTheme === t.id && (
-                                    <CheckCircle2 className="w-4 h-4 text-primary animate-in zoom-in duration-300" />
-                                )}
-                            </button>
-                        ))}
+
+                {/* PIN Section */}
+                <div className="pt-6 border-t border-white/5 space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                        <Lock className="w-4 h-4 text-primary" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Seguridad</h3>
                     </div>
+                    <Button
+                        variant="secondary"
+                        className="w-full rounded-2xl py-4 font-bold tracking-widest uppercase text-xs"
+                        onClick={() => setShowPinChange(true)}
+                    >
+                        <Lock className="w-4 h-4 mr-2" /> Cambiar PIN
+                    </Button>
                 </div>
 
                 {/* Main Actions */}
@@ -174,6 +181,82 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                     onCancel={() => setShowPhotoCapture(false)}
                     currentPhoto={player.photoURL}
                 />
+            )}
+
+            {showPinChange && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPinChange(false)}>
+                    <Card glass className="max-w-sm w-full p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Lock className="w-5 h-5 text-primary" />
+                                <h3 className="text-xl font-bold font-heading">Cambiar PIN</h3>
+                            </div>
+                            <button onClick={() => setShowPinChange(false)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-gray-400 uppercase tracking-wider font-bold block mb-2">PIN Actual</label>
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={currentPin}
+                                    onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ''))}
+                                    className="w-full bg-surface border border-white/10 rounded-lg p-3 text-center text-2xl tracking-[0.5em] font-mono focus:border-primary outline-none"
+                                    placeholder="••••"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-400 uppercase tracking-wider font-bold block mb-2">Nuevo PIN</label>
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={newPin}
+                                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                                    className="w-full bg-surface border border-white/10 rounded-lg p-3 text-center text-2xl tracking-[0.5em] font-mono focus:border-primary outline-none"
+                                    placeholder="••••"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-400 uppercase tracking-wider font-bold block mb-2">Confirmar PIN</label>
+                                <input
+                                    type="password"
+                                    inputMode="numeric"
+                                    maxLength={6}
+                                    value={confirmPin}
+                                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                                    className="w-full bg-surface border border-white/10 rounded-lg p-3 text-center text-2xl tracking-[0.5em] font-mono focus:border-primary outline-none"
+                                    placeholder="••••"
+                                />
+                            </div>
+
+                            {pinError && (
+                                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm text-center">
+                                    {pinError}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <Button variant="ghost" className="flex-1" onClick={() => setShowPinChange(false)}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                className="flex-1"
+                                onClick={handlePinChange}
+                                disabled={!currentPin || !newPin || !confirmPin}
+                            >
+                                Guardar
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
             )}
         </div>
     );
