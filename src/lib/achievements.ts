@@ -6,6 +6,7 @@ export interface Achievement {
     description: string;
     icon: string;
     color: string;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -14,42 +15,48 @@ export const ACHIEVEMENTS: Achievement[] = [
         name: 'Primer Paso',
         description: 'Gana tu primer partido.',
         icon: '🎯',
-        color: 'from-blue-500 to-cyan-500'
+        color: 'from-blue-500 to-cyan-500',
+        rarity: 'common'
     },
     {
         id: 'hat-trick',
         name: 'Hat-trick Hero',
         description: 'Anota 3 o más goles en un solo partido.',
         icon: '⚽',
-        color: 'from-orange-500 to-red-500'
+        color: 'from-orange-500 to-red-500',
+        rarity: 'rare'
     },
     {
         id: 'clean-sheet',
         name: 'Valla Invicta',
         description: 'Gana un partido sin recibir goles.',
         icon: '🛡️',
-        color: 'from-green-500 to-emerald-500'
+        color: 'from-green-500 to-emerald-500',
+        rarity: 'rare'
     },
     {
         id: 'unbeatable',
         name: 'Imbatible',
         description: 'Gana 5 partidos seguidos.',
         icon: '🔥',
-        color: 'from-purple-500 to-pink-500'
+        color: 'from-purple-500 to-pink-500',
+        rarity: 'epic'
     },
     {
         id: 'goal-machine',
         name: 'Máquina de Goles',
         description: 'Alcanza los 50 goles totales.',
         icon: '🤖',
-        color: 'from-yellow-400 to-orange-500'
+        color: 'from-yellow-400 to-orange-500',
+        rarity: 'epic'
     },
     {
         id: 'tournament-king',
         name: 'Rey de Copas',
         description: 'Gana un torneo oficial.',
         icon: '👑',
-        color: 'from-yellow-500 to-amber-600'
+        color: 'from-yellow-500 to-amber-600',
+        rarity: 'legendary'
     }
 ];
 

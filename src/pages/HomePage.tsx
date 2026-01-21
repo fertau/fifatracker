@@ -22,8 +22,8 @@ export function HomePage({ player }: DashboardProps) {
     const [rankingPeriod, setRankingPeriod] = useState<'all' | 'recent'>('all');
     const displayRanking = rankingPeriod === 'all' ? rankedPlayers : recentRankedPlayers;
 
-    const currentPlayerWithStats = displayRanking.find(p => p.id === player.id);
-    const myRank = displayRanking.findIndex(p => p.id === player.id) + 1;
+    const currentPlayerWithStats = displayRanking.find((p: any) => p.id === player.id);
+    const myRank = displayRanking.findIndex((p: any) => p.id === player.id) + 1;
 
     const [showBreakdown, setShowBreakdown] = useState<string | null>(null);
     const [likedNews, setLikedNews] = useState<Record<string, boolean>>(() => {
@@ -189,8 +189,8 @@ export function HomePage({ player }: DashboardProps) {
             {/* Main Header / Dashboard Info */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold font-heading tracking-tighter uppercase">Dashboard</h2>
-                    <p className="text-sm text-gray-500 uppercase tracking-widest font-bold">Tu progreso social</p>
+                    <h2 className="text-4xl font-black font-heading tracking-tighter uppercase italic leading-none">Dashboard</h2>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-[0.3em] mt-1">Tu progreso social</p>
                 </div>
                 <div className="bg-primary/10 border border-primary/20 px-3 py-1 rounded-full flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-primary" />
@@ -295,7 +295,7 @@ export function HomePage({ player }: DashboardProps) {
                                     for (let i = 0; i < 10; i++) {
                                         const m = myLastMatches[i];
                                         if (!m) {
-                                            dots.push(<div key={i} className="w-3 h-3 rounded-full bg-white/5 border border-white/5" />);
+                                            dots.push(<div key={i} className="w-4 h-4 rounded-full bg-white/5 border border-white/5" />);
                                         } else {
                                             const isT1 = m.players.team1.includes(player.id);
                                             const win = (isT1 && m.score.team1 > m.score.team2) || (!isT1 && m.score.team2 > m.score.team1);
@@ -303,7 +303,7 @@ export function HomePage({ player }: DashboardProps) {
 
                                             dots.push(
                                                 <div key={i} className={cn(
-                                                    "w-3 h-3 rounded-full border shadow-sm",
+                                                    "w-4 h-4 rounded-full border-2 shadow-sm transition-transform hover:scale-125 cursor-help",
                                                     win ? "bg-primary border-primary/50 shadow-primary/20" :
                                                         draw ? "bg-gray-500 border-gray-400/50 shadow-gray-500/20" :
                                                             "bg-red-500 border-red-400/50 shadow-red-500/20"
@@ -329,18 +329,18 @@ export function HomePage({ player }: DashboardProps) {
 
                         {/* Avg Goals For */}
                         <Card glass className="p-3 border-accent/20 bg-gradient-to-br from-accent/10 to-transparent flex flex-col justify-center items-center text-center">
-                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-1">
+                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-0.5">
                                 {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsScored / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(1) : '0.0'}
                             </span>
-                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none">Goles Favor</p>
+                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">PROM. FAVOR</p>
                         </Card>
 
                         {/* Avg Goals Against */}
                         <Card glass className="p-3 border-red-500/20 bg-gradient-to-br from-red-500/10 to-transparent flex flex-col justify-center items-center text-center">
-                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-1">
+                            <span className="text-2xl font-black font-mono tracking-tighter text-white mb-0.5">
                                 {currentPlayerWithStats?.derivedStats.matchesPlayed ? (currentPlayerWithStats.derivedStats.goalsConceded / currentPlayerWithStats.derivedStats.matchesPlayed).toFixed(1) : '0.0'}
                             </span>
-                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none">Goles Contra</p>
+                            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest leading-none mb-1">PROM. CONTRA</p>
                         </Card>
                     </div>
                 </div>
@@ -379,7 +379,7 @@ export function HomePage({ player }: DashboardProps) {
                     </Link>
                 </div>
                 <div className="space-y-2">
-                    {displayRanking.slice(0, 3).map((p, idx) => {
+                    {displayRanking.slice(0, 3).map((p: any, idx: number) => {
                         const breakdown = getScoreBreakdown(p.derivedStats);
                         return (
                             <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5 transition-all hover:border-white/20", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>

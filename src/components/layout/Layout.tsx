@@ -32,13 +32,9 @@ export const Layout = ({ children, player }: LayoutProps) => {
                         className="flex flex-col items-center group transition-transform"
                     >
                         <div className="p-1 rounded-full border border-white/10 group-hover:border-primary transition-colors relative">
-                            {player.photoURL ? (
-                                <img src={player.photoURL} alt={player.name} className="w-8 h-8 rounded-full" />
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xl">
-                                    {player.avatar}
-                                </div>
-                            )}
+                            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-xl">
+                                {player.avatar}
+                            </div>
                             {hasFriendRequests && (
                                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-background rounded-full animate-bounce" />
                             )}

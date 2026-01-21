@@ -19,7 +19,7 @@ interface DataContextType {
     addMatch: (match: Match) => Promise<void>;
     updateMatch: (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => Promise<void>;
     deleteMatch: (matchId: string) => Promise<void>;
-    addPlayer: (name: string, avatar: string, photoURL?: string, pin?: string) => Promise<Player>;
+    addPlayer: (name: string, avatar: string, pin?: string) => Promise<Player>;
     updatePlayer: (playerId: string, updates: Partial<Player>) => Promise<void>;
     deletePlayer: (playerId: string) => Promise<void>;
     updatePlayerFriends: (hostId: string, friendId: string) => Promise<void>;
@@ -86,12 +86,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return JSON.parse(JSON.stringify(data));
     };
 
-    const addPlayer = async (name: string, avatar: string, photoURL?: string, pin: string = '1234') => {
+    const addPlayer = async (name: string, avatar: string, pin: string = '1234') => {
         try {
             const rawPlayer = {
                 name,
                 avatar,
-                photoURL,
                 pin, // Now required
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
@@ -99,7 +98,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 sentRequests: [],
                 visibility: 'public' as const,
                 createdAt: Date.now(),
-                ownerId: auth.currentUser?.uid || 'anonymous'
+                ownerId: auth.currentUser?.uid || 'anonymous',
+                isPinned: true
             };
             const newPlayer = cleanData(rawPlayer);
             const docRef = await addDoc(collection(db, 'players'), newPlayer);

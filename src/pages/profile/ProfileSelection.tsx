@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, Trash2, Lock } from 'lucide-react';
+import { Plus, Trash2, Lock } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { PhotoCapture } from '../../components/PhotoCapture';
 import { AvatarSelector } from '../../components/profile/AvatarSelector';
 import type { Player } from '../../types';
 
@@ -15,7 +14,6 @@ interface ProfileSelectionProps {
 export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const { players, loading, createPlayer, deletePlayer, updatePlayer } = usePlayers();
     const [isCreating, setIsCreating] = useState(false);
-    const [showPhotoCapture, setShowPhotoCapture] = useState(false);
     const [newName, setNewName] = useState('');
     const [newPin, setNewPin] = useState('');
     const [selectedAvatar, setSelectedAvatar] = useState('⚽');
@@ -27,7 +25,6 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
             setSelectedAvatar(defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)]);
         }
     }, [isCreating]);
-    const [photoURL, setPhotoURL] = useState<string | undefined>();
     const [searchQuery, setSearchQuery] = useState('');
 
     // Login flow
@@ -48,7 +45,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
         }
 
         try {
-            const player = await createPlayer(newName, selectedAvatar, photoURL, newPin);
+            const player = await createPlayer(newName, selectedAvatar, newPin);
             onSelect(player);
         } catch (error) {
             console.error('Error creating player:', error);
@@ -69,10 +66,6 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
         }
     };
 
-    const handlePhotoSelected = (url: string) => {
-        setPhotoURL(url);
-        setShowPhotoCapture(false);
-    };
 
     const handlePinSetup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,14 +108,8 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                     >
                         <Card className="text-center space-y-6 p-8 border-primary/30">
                             <div className="flex flex-col items-center gap-4">
-                                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary shadow-[0_0_20px_rgba(var(--color-primary),0.3)]">
-                                    {selectedPlayerForLogin.photoURL ? (
-                                        <img src={selectedPlayerForLogin.photoURL} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl">
-                                            {selectedPlayerForLogin.avatar}
-                                        </div>
-                                    )}
+                                <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary shadow-[0_0_20px_rgba(var(--color-primary),0.3)] flex items-center justify-center text-4xl bg-white/5">
+                                    {selectedPlayerForLogin.avatar}
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold font-heading">{selectedPlayerForLogin.name}</h2>
@@ -232,7 +219,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 {players
                                     .filter(p => {
                                         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-                                        if (searchQuery.trim() === '') return p.visibility !== 'private';
+                                        if (searchQuery.trim() === '') return p.isPinned !== false;
                                         return matchesSearch;
                                     })
                                     .map((player) => (
@@ -264,15 +251,9 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                                 </div>
                                             )}
 
-                                            {player.photoURL ? (
-                                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 group-hover:border-primary transition-colors">
-                                                    <img src={player.photoURL} alt={player.name} className="w-full h-full object-cover" />
-                                                </div>
-                                            ) : (
-                                                <div className="text-5xl drop-shadow-[0_0_10px_rgba(var(--color-primary),0.3)]">
-                                                    {player.avatar}
-                                                </div>
-                                            )}
+                                            <div className="text-5xl drop-shadow-[0_0_10px_rgba(var(--color-primary),0.3)]">
+                                                {player.avatar}
+                                            </div>
                                             <span className="font-heading text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
                                                 {player.name}
                                             </span>
@@ -312,28 +293,9 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
 
                             <form onSubmit={handleCreate} className="space-y-6">
                                 <div className="flex flex-col items-center gap-3">
-                                    <div
-                                        className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-white/10 hover:border-primary transition-colors cursor-pointer group shadow-xl"
-                                        onClick={() => setShowPhotoCapture(true)}
-                                    >
-                                        {photoURL ? (
-                                            <img src={photoURL} alt="Preview" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-white/5 flex items-center justify-center text-4xl">
-                                                {selectedAvatar}
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Camera className="w-6 h-6 text-white" />
-                                        </div>
+                                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10 shadow-xl flex items-center justify-center text-5xl bg-white/5">
+                                        {selectedAvatar}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPhotoCapture(true)}
-                                        className="text-[10px] text-gray-500 hover:text-primary transition-colors uppercase font-black tracking-widest"
-                                    >
-                                        {photoURL ? 'Cambiar por foto real' : 'Usar foto real (opcional)'}
-                                    </button>
                                 </div>
 
                                 <div className="space-y-4">
@@ -366,17 +328,15 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     </div>
                                 </div>
 
-                                {!photoURL && (
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">Avatar</label>
-                                        <div className="w-full">
-                                            <AvatarSelector
-                                                selectedAvatar={selectedAvatar}
-                                                onSelect={setSelectedAvatar}
-                                            />
-                                        </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest ml-1">Avatar</label>
+                                    <div className="w-full">
+                                        <AvatarSelector
+                                            selectedAvatar={selectedAvatar}
+                                            onSelect={setSelectedAvatar}
+                                        />
                                     </div>
-                                )}
+                                </div>
 
                                 <div className="flex gap-3 pt-4">
                                     <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsCreating(false)}>
@@ -392,13 +352,6 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                 )}
             </AnimatePresence>
 
-            {showPhotoCapture && (
-                <PhotoCapture
-                    onPhotoSelected={handlePhotoSelected}
-                    onCancel={() => setShowPhotoCapture(false)}
-                    currentPhoto={photoURL}
-                />
-            )}
         </div>
     );
 }

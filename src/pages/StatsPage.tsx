@@ -14,7 +14,8 @@ interface StatsPageProps {
 
 export function StatsPage({ player }: StatsPageProps) {
     const stats = useAdvancedStats(player.id);
-    const { rankedPlayers } = useLeaderboard();
+    const [rankingMode, setRankingMode] = useState<'1v1' | '2v2' | 'global'>('1v1');
+    const { rankedPlayers } = useLeaderboard(rankingMode);
     const [showInfo, setShowInfo] = useState(false);
 
     return (
@@ -68,11 +69,23 @@ export function StatsPage({ player }: StatsPageProps) {
 
             {/* Community Ranking Table */}
             <Card className="overflow-hidden border-white/5 bg-white/[0.02]">
-                <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        <h3 className="font-bold uppercase tracking-widest text-sm">Ranking Comunidad</h3>
-                    </div>
+                <div className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    <h3 className="font-bold uppercase tracking-widest text-sm">Ranking Comunidad</h3>
+                </div>
+                <div className="flex bg-white/5 p-1 rounded-xl border border-white/5 scale-90 origin-right">
+                    {(['1v1', '2v2', 'global'] as const).map(m => (
+                        <button
+                            key={m}
+                            onClick={() => setRankingMode(m)}
+                            className={cn(
+                                "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                                rankingMode === m ? "bg-primary text-white shadow-lg" : "text-gray-500 hover:text-gray-300"
+                            )}
+                        >
+                            {m}
+                        </button>
+                    ))}
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
@@ -148,11 +161,7 @@ export function StatsPage({ player }: StatsPageProps) {
                                 {stats.nemesis.losses} derrotas contra {stats.nemesis.player.name}
                             </p>
                         </div>
-                        {stats.nemesis.player.photoURL ? (
-                            <img src={stats.nemesis.player.photoURL} alt={stats.nemesis.player.name} className="w-12 h-12 rounded-full border-2 border-red-500/50" />
-                        ) : (
-                            <div className="text-4xl">{stats.nemesis.player.avatar}</div>
-                        )}
+                        <div className="text-4xl">{stats.nemesis.player.avatar}</div>
                     </div>
                 </Card>
             )}
@@ -171,11 +180,7 @@ export function StatsPage({ player }: StatsPageProps) {
                                 {stats.bestDuo.wins} victorias con {stats.bestDuo.partner.name}
                             </p>
                         </div>
-                        {stats.bestDuo.partner.photoURL ? (
-                            <img src={stats.bestDuo.partner.photoURL} alt={stats.bestDuo.partner.name} className="w-12 h-12 rounded-full border-2 border-green-500/50" />
-                        ) : (
-                            <div className="text-4xl">{stats.bestDuo.partner.avatar}</div>
-                        )}
+                        <div className="text-4xl">{stats.bestDuo.partner.avatar}</div>
                     </div>
                 </Card>
             )}

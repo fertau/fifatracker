@@ -11,7 +11,6 @@ export interface Player {
     id: string;
     name: string;
     avatar: string; // URL or emoji or local asset path
-    photoURL?: string; // Firebase Storage URL for profile photo
     stats: PlayerStats;
     derivedStats?: PlayerStats;
     friends: string[]; // List of Player IDs
@@ -21,6 +20,7 @@ export interface Player {
     pin: string; // Security PIN (required)
     ownerId: string;
     createdAt: number;
+    isPinned?: boolean; // If true, shows in normal profile selection
 }
 
 export interface AuditLogEntry {

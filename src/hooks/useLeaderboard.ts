@@ -3,7 +3,9 @@ import { useData } from '../context/DataContext';
 import { calculatePlayerScore } from '../lib/utils';
 import type { PlayerStats } from '../types';
 
-export function useLeaderboard() {
+export type RankingMode = '1v1' | '2v2' | 'global';
+
+export function useLeaderboard(mode: RankingMode = '1v1') {
     const { players } = usePlayers();
     const { matches } = useData();
 
@@ -45,9 +47,24 @@ export function useLeaderboard() {
         };
     };
 
-    const getRankedPool = (periodMatches: any[]) => {
+    const getRankedPool = (allMatches: any[], filterMode: RankingMode, filterPeriod: 'all' | 'recent') => {
+        let filteredMatches = [...allMatches];
+
+        // Filter by Period
+        if (filterPeriod === 'recent') {
+            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+            filteredMatches = filteredMatches.filter(m => m.date >= thirtyDaysAgo);
+        }
+
+        // Filter by Mode
+        if (filterMode === '1v1') {
+            filteredMatches = filteredMatches.filter(m => m.players.team1.length === 1 && m.players.team2.length === 1);
+        } else if (filterMode === '2v2') {
+            filteredMatches = filteredMatches.filter(m => m.players.team1.length === 2 && m.players.team2.length === 2);
+        }
+
         return players.map(p => {
-            const myMatches = periodMatches.filter(m =>
+            const myMatches = filteredMatches.filter(m =>
                 m.players.team1.includes(p.id) || m.players.team2.includes(p.id)
             );
             const derivedStats = calculateStats(myMatches, p.id);
@@ -59,12 +76,8 @@ export function useLeaderboard() {
         }).sort((a, b) => b.score - a.score);
     };
 
-    const rankedPlayers = getRankedPool(matches);
-
-    // Recent (Last 30 days)
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-    const recentMatches = matches.filter(m => m.date >= thirtyDaysAgo);
-    const recentRankedPlayers = getRankedPool(recentMatches);
+    const rankedPlayers = getRankedPool(matches, mode, 'all');
+    const recentRankedPlayers = getRankedPool(matches, mode, 'recent');
 
     return { rankedPlayers, recentRankedPlayers };
 }

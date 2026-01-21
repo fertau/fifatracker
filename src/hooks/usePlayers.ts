@@ -15,8 +15,8 @@ export function usePlayers() {
         addMatch
     } = useData();
 
-    const createPlayer = async (name: string, avatar: string, photoURL?: string, pin?: string) => {
-        return addPlayer(name, avatar, photoURL, pin);
+    const createPlayer = async (name: string, avatar: string, pin?: string) => {
+        return addPlayer(name, avatar, pin);
     };
 
     const autoFriendship = async (participantIds: string[]) => {

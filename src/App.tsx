@@ -16,6 +16,7 @@ import { HomePage } from './pages/HomePage';
 import { StatsPage } from './pages/StatsPage';
 import { PlayMenu } from './pages/PlayMenu';
 import { ProfilePage } from './pages/profile/ProfilePage';
+import { AdminDashboard } from './pages/profile/AdminDashboard';
 import { SplashScreen } from './components/layout/SplashScreen';
 import { AnimatePresence } from 'framer-motion';
 import type { Player } from './types';
@@ -103,6 +104,7 @@ function MainApp() {
                 <Route path="/profile" element={
                   <ProfilePage player={currentPlayer} onLogout={handleLogout} />
                 } />
+                <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
                 <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
                 <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
