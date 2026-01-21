@@ -218,17 +218,19 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (confirm(`¿Eliminar a ${player.name}?`)) {
-                                                deletePlayer(player.id);
-                                            }
-                                        }}
-                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {localStorage.getItem('is_fertau_admin') === 'true' && player.name.toLowerCase() !== 'fertau' && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`¿Eliminar a ${player.name}?`)) {
+                                                    deletePlayer(player.id);
+                                                }
+                                            }}
+                                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
 
                                     {player.pin && (
                                         <div className="absolute top-2 left-2 p-1 rounded-full bg-primary/10 text-primary">

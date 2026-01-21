@@ -348,20 +348,25 @@ export function HomePage({ player }: DashboardProps) {
             </section>
 
             {/* Community */}
-            <Link to="/friends">
-                <Card className="p-4 flex items-center justify-between border-white/10 hover:border-primary/50 transition-all bg-gradient-to-r from-transparent to-primary/5">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
-                            <Users className="w-5 h-5 text-primary" />
+            <section className="space-y-3">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                    <Users className="w-3 h-3 text-primary" /> Comunidad
+                </h3>
+                <Link to="/friends">
+                    <Card className="p-4 flex items-center justify-between border-white/10 hover:border-primary/50 transition-all bg-gradient-to-r from-transparent to-primary/5">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+                                <Users className="w-5 h-5 text-primary" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-sm tracking-tight italic uppercase">Amigos y Jugadores</p>
+                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Ver lista completa</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-bold text-sm tracking-tight italic uppercase">Comunidad</p>
-                            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Amigos y Jugadores</p>
-                        </div>
-                    </div>
-                    <ArrowUpRight className="w-5 h-5 text-primary/50" />
-                </Card>
-            </Link>
+                        <ArrowUpRight className="w-5 h-5 text-primary/50" />
+                    </Card>
+                </Link>
+            </section>
         </div>
     );
 }

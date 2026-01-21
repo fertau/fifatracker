@@ -57,6 +57,9 @@ function MainApp() {
     if (loading) return;
     if (currentPlayer) {
       localStorage.setItem('fifa_tracker_current_player_id', currentPlayer.id);
+      if (currentPlayer.name.toLowerCase() === 'fertau') {
+        localStorage.setItem('is_fertau_admin', 'true');
+      }
     } else {
       localStorage.removeItem('fifa_tracker_current_player_id');
     }
