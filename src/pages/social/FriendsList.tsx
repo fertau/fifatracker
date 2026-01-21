@@ -194,11 +194,9 @@ export function FriendsList({ currentUser }: FriendsListProps) {
                                     glass={false}
                                 >
                                     <div className="flex items-center gap-4">
-                                        {friend.photoURL ? (
-                                            <img src={friend.photoURL} alt="" className="w-12 h-12 rounded-full object-cover border border-white/10" />
-                                        ) : (
+                                        <div className="w-12 h-12 rounded-full flex items-center justify-center border border-white/10 bg-white/5">
                                             <span className="text-3xl">{friend.avatar}</span>
-                                        )}
+                                        </div>
                                         <div>
                                             <span className="font-bold text-lg block">{friend.name}</span>
                                             <span className="text-xs text-gray-500 uppercase tracking-widest font-bold">Amigo</span>
@@ -293,11 +291,9 @@ export function FriendsList({ currentUser }: FriendsListProps) {
                                 glass={false}
                             >
                                 <div className="flex items-center gap-3">
-                                    {player.photoURL ? (
-                                        <img src={player.photoURL} alt="" className="w-10 h-10 rounded-full object-cover" />
-                                    ) : (
-                                        <span className="text-2xl">{player.avatar}</span>
-                                    )}
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-white/5">
+                                        <span className="text-xl">{player.avatar}</span>
+                                    </div>
                                     <span className="font-bold text-lg">{player.name}</span>
                                 </div>
                                 <Button

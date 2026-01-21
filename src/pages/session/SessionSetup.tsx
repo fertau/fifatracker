@@ -42,7 +42,7 @@ export function SessionSetup({ currentUser }: { currentUser: Player }) {
 
         setCreating(true);
         try {
-            const player = await createPlayer(newName, newAvatar, undefined, newPin);
+            const player = await createPlayer(newName, newAvatar, newPin);
 
             // Auto friendship with host
             await autoFriendship([currentUser.id, player.id]);
