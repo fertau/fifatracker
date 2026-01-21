@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Trophy, ArrowRight, Flag, AlertTriangle, Calendar } from 'lucide-react';
+import { Users, Trophy, ArrowRight, Flag, AlertTriangle, Calendar, RefreshCw } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useSession } from '../../context/SessionContext';
 import { Card } from '../../components/ui/Card';
@@ -22,7 +22,7 @@ export function NewMatch() {
 
     const [gameType, setGameType] = useState<Match['type']>('1v1');
 
-    const [step, setStep] = useState<'setup' | 'score'>(t1Param && t2Param ? 'score' : 'setup');
+    const [step, setStep] = useState<'setup' | 'score' | 'saved'>(t1Param && t2Param ? 'score' : 'setup');
 
     // Selection State
     const [team1, setTeam1] = useState<string[]>(t1Param ? [t1Param] : []);
@@ -70,8 +70,6 @@ export function NewMatch() {
     const handleSave = async () => {
         try {
             if (saveMatch) {
-                // We'll update saveMatch or just use addMatch if possible, 
-                // but usePlayers wraps it. Let's update usePlayers.
                 await saveMatch(
                     gameType,
                     team1,
@@ -86,15 +84,22 @@ export function NewMatch() {
                     tournamentFixtureSlot ? parseInt(tournamentFixtureSlot) : undefined
                 );
             }
-            if (tournamentId) {
-                navigate(`/tournament/${tournamentId}`);
-            } else {
-                navigate('/');
-            }
+            // Instead of immediate navigate, show summary
+            setStep('saved');
         } catch (error) {
             console.error('Error saving match:', error);
             alert('Error al guardar el partido. Verifica tu conexión e intenta de nuevo.');
         }
+    };
+
+    const handleRematch = () => {
+        setScore1(0);
+        setScore2(0);
+        setEndedBy('regular');
+        setPenaltyWinner(undefined);
+        setForfeitLoser(undefined);
+        setMatchDate(new Date().toISOString().slice(0, 16));
+        setStep('score');
     };
 
     return (
@@ -192,7 +197,7 @@ export function NewMatch() {
                         CONTINUAR <ArrowRight className="w-5 h-5" />
                     </Button>
                 </motion.div>
-            ) : (
+            ) : step === 'score' ? (
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -300,6 +305,81 @@ export function NewMatch() {
                         <Button variant="ghost" className="flex-1" onClick={() => setStep('setup')}>Back</Button>
                         <Button className="flex-[2]" glow size="lg" onClick={handleSave}>
                             <Trophy className="w-5 h-5" /> FINALIZAR PARTIDO
+                        </Button>
+                    </div>
+                </motion.div>
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-8 text-center"
+                >
+                    <div className="py-10 space-y-4">
+                        <div className="relative inline-block">
+                            <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+                            <Trophy className="w-20 h-20 text-yellow-500 relative z-10 animate-bounce" />
+                        </div>
+                        <h2 className="text-4xl font-bold font-heading italic uppercase tracking-tighter">
+                            ¡Partido Guardado!
+                        </h2>
+                        <p className="text-gray-400 uppercase font-black tracking-widest text-[10px]">Las estadísticas han sido actualizadas</p>
+                    </div>
+
+                    <Card glass className="p-6 space-y-6 border-primary/20 bg-primary/5">
+                        <div className="flex justify-around items-center">
+                            <div className="space-y-2">
+                                <div className="flex -space-x-2 justify-center mb-1">
+                                    {team1.map(id => (
+                                        <span key={id} className="text-2xl" title={players.find(p => p.id === id)?.name}>{players.find(p => p.id === id)?.avatar}</span>
+                                    ))}
+                                </div>
+                                <span className="text-4xl font-bold font-mono">{score1}</span>
+                            </div>
+                            <div className="text-2xl font-bold text-gray-600">VS</div>
+                            <div className="space-y-2">
+                                <div className="flex -space-x-2 justify-center mb-1">
+                                    {team2.map(id => (
+                                        <span key={id} className="text-2xl" title={players.find(p => p.id === id)?.name}>{players.find(p => p.id === id)?.avatar}</span>
+                                    ))}
+                                </div>
+                                <span className="text-4xl font-bold font-mono">{score2}</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                            <div className="bg-black/20 p-3 rounded-2xl">
+                                <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Puntos Ganados</p>
+                                <p className="text-xl font-bold text-primary">
+                                    {score1 > score2 ? '+300' : score1 === score2 ? '+100' : '+0'} PTS
+                                </p>
+                            </div>
+                            <div className="bg-black/20 p-3 rounded-2xl">
+                                <p className="text-[8px] text-gray-500 uppercase font-black mb-1">Bonos</p>
+                                <p className="text-xl font-bold text-accent">
+                                    +{Math.abs(score1 - score2) * 10} GD
+                                </p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <div className="space-y-3 pt-6">
+                        <Button
+                            className="w-full h-16 rounded-3xl text-lg font-black italic uppercase tracking-tighter"
+                            variant="primary"
+                            glow
+                            onClick={handleRematch}
+                        >
+                            <RefreshCw className="w-5 h-5 mr-2" /> Revancha
+                        </Button>
+                        <Button
+                            className="w-full h-14 rounded-2xl text-xs font-black uppercase tracking-widest opacity-70"
+                            variant="ghost"
+                            onClick={() => {
+                                if (tournamentId) navigate(`/tournament/${tournamentId}`);
+                                else navigate('/');
+                            }}
+                        >
+                            Volver al Inicio
                         </Button>
                     </div>
                 </motion.div>

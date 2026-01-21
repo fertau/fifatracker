@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { Trophy, Calendar, Users, ChevronRight, Plus, Crown, ArrowLeft } from 'lucide-react';
+import { Trophy, Calendar, Users, ChevronRight, Plus, Crown, ArrowLeft, EyeOff, Lock } from 'lucide-react';
 import { useTournaments } from '../../hooks/useTournaments';
+import { useSession } from '../../context/SessionContext';
 
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -9,10 +10,20 @@ import { Button } from '../../components/ui/Button';
 
 export function TournamentList() {
     const navigate = useNavigate();
+    const { session, isSessionActive } = useSession();
     const { tournaments, getTournamentMatches, deleteTournament } = useTournaments();
 
-    const activeTournaments = tournaments.filter(t => t.status === 'active' || t.status === 'draft').sort((a, b) => b.createdAt - a.createdAt);
-    const finishedTournaments = tournaments.filter(t => t.status === 'completed').sort((a, b) => b.createdAt - a.createdAt);
+    // Filter by participation if session is active
+    const filteredTournaments = tournaments.filter(t => {
+        if (!isSessionActive || !session || session.playersPresent.length === 0) return true;
+        // Show if any present player is a participant
+        return t.participants.some(pId => session.playersPresent.includes(pId));
+    });
+
+    const activeTournaments = filteredTournaments.filter(t => t.status === 'active' || t.status === 'draft').sort((a, b) => b.createdAt - a.createdAt);
+    const finishedTournaments = filteredTournaments.filter(t => t.status === 'completed').sort((a, b) => b.createdAt - a.createdAt);
+
+    const otherTournamentsCount = tournaments.length - filteredTournaments.length;
 
     // --- TEMPORARY: DELETE ALL FUNCTIONALITY ---
     const handleDeleteAll = async () => {
@@ -113,6 +124,15 @@ export function TournamentList() {
                 )}
             </section>
 
+            {/* Other Tournaments Hint */}
+            {otherTournamentsCount > 0 && (
+                <div className="text-center py-4">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest flex items-center justify-center gap-2 opacity-50">
+                        <EyeOff className="w-3 h-3" /> Hay {otherTournamentsCount} torneos más ocultos (No participas)
+                    </p>
+                </div>
+            )}
+
             {/* Finished Tournaments */}
             {finishedTournaments.length > 0 && (
                 <section className="space-y-4 pt-4 border-t border-white/5">
@@ -130,8 +150,11 @@ export function TournamentList() {
                                     onClick={() => navigate(`/tournament/${t.id}`)}
                                 >
                                     <div className="flex justify-between items-center">
-                                        <div>
-                                            <h4 className="font-bold text-gray-300">{t.name}</h4>
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-gray-300">{t.name}</h4>
+                                                <Lock className="w-3 h-3 text-gray-600" />
+                                            </div>
                                             <p className="text-xs text-gray-500 uppercase font-bold">
                                                 {new Date(t.createdAt).toLocaleDateString()}
                                             </p>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Camera, Trash2, Lock } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
@@ -18,7 +18,15 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
     const [newName, setNewName] = useState('');
     const [newPin, setNewPin] = useState('');
-    const [selectedAvatar, setSelectedAvatar] = useState('🦁');
+    const [selectedAvatar, setSelectedAvatar] = useState('⚽');
+
+    // Effect to randomize initial avatar
+    useEffect(() => {
+        if (isCreating) {
+            const defaultAvatars = ['⚽', '🦁', '👻', '🎮', '🚀', '🏆', '🔥', '💎', '🦖', '🦈'];
+            setSelectedAvatar(defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)]);
+        }
+    }, [isCreating]);
     const [photoURL, setPhotoURL] = useState<string | undefined>();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -322,9 +330,9 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     <button
                                         type="button"
                                         onClick={() => setShowPhotoCapture(true)}
-                                        className="text-[10px] text-primary hover:text-primary/80 transition-colors uppercase font-bold tracking-widest"
+                                        className="text-[10px] text-gray-500 hover:text-primary transition-colors uppercase font-black tracking-widest"
                                     >
-                                        {photoURL ? 'Cambiar foto' : 'Subir foto'}
+                                        {photoURL ? 'Cambiar por foto real' : 'Usar foto real (opcional)'}
                                     </button>
                                 </div>
 

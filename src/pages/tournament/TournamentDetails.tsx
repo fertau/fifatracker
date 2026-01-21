@@ -79,34 +79,40 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
 
     const handleFinish = async () => {
         if (!tournament) return;
-        if (confirm('¿Finalizar torneo de forma manual? Esto archivará el torneo.')) {
-            let winnerId: string | undefined;
 
-            if (tournament.type === 'league' && standings.length > 0) {
-                winnerId = standings[0].playerId;
-            } else if (tournament.type === 'knockout') {
-                // Find the match corresponding to the final slot (last item in fixtures array)
-                const finalSlotIndex = (tournament.fixtures?.length || 0) - 1;
-                const finalMatch = tournamentMatches.find(m => m.tournamentFixtureSlot === finalSlotIndex);
+        let winnerId: string | undefined;
 
-                if (finalMatch && finalMatch.endedBy) {
-                    // Determine winner from the final match
-                    if (finalMatch.endedBy === 'regular') {
-                        if (finalMatch.score.team1 > finalMatch.score.team2) winnerId = finalMatch.players.team1[0];
-                        else if (finalMatch.score.team2 > finalMatch.score.team1) winnerId = finalMatch.players.team2[0];
-                    } else if (finalMatch.endedBy === 'penalties' && finalMatch.penaltyWinner) {
-                        winnerId = finalMatch.penaltyWinner === 1 ? finalMatch.players.team1[0] : finalMatch.players.team2[0];
-                    } else if (finalMatch.endedBy === 'forfeit' && finalMatch.forfeitLoser) {
-                        winnerId = finalMatch.forfeitLoser === 1 ? finalMatch.players.team2[0] : finalMatch.players.team1[0];
-                    }
+        if (tournament.type === 'league' && standings.length > 0) {
+            winnerId = standings[0].playerId;
+        } else if (tournament.type === 'knockout') {
+            const finalSlotIndex = (tournament.fixtures?.length || 0) - 1;
+            const finalMatch = tournamentMatches.find(m => m.tournamentFixtureSlot === finalSlotIndex);
+
+            if (finalMatch && finalMatch.endedBy) {
+                if (finalMatch.endedBy === 'regular') {
+                    if (finalMatch.score.team1 > finalMatch.score.team2) winnerId = finalMatch.players.team1[0];
+                    else if (finalMatch.score.team2 > finalMatch.score.team1) winnerId = finalMatch.players.team2[0];
+                } else if (finalMatch.endedBy === 'penalties' && finalMatch.penaltyWinner) {
+                    winnerId = finalMatch.penaltyWinner === 1 ? finalMatch.players.team1[0] : finalMatch.players.team2[0];
+                } else if (finalMatch.endedBy === 'forfeit' && finalMatch.forfeitLoser) {
+                    winnerId = finalMatch.forfeitLoser === 1 ? finalMatch.players.team2[0] : finalMatch.players.team1[0];
                 }
             }
+        }
 
+        if (!winnerId) {
+            if (!confirm('No se pudo determinar un ganador claro. ¿Finalizar de todos modos?')) return;
+        } else {
+            if (!confirm(`¿Finalizar torneo? El ganador es ${getPlayer(winnerId)?.name}.`)) return;
+        }
+
+        try {
             await updateTournament(tournament.id, {
                 status: 'completed',
                 winner: winnerId
             });
-            navigate('/tournaments');
+        } catch (error) {
+            console.error('Error finishing tournament:', error);
         }
     };
 
@@ -136,15 +142,37 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
                     <Button variant="ghost" size="sm" className="p-2"><ArrowLeft /></Button>
                 </Link>
                 <div>
-                    <h2 className="text-2xl font-bold font-heading bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                        {tournament.name}
-                    </h2>
+                    <div className="flex items-center gap-2 mb-1">
+                        <h2 className="text-2xl font-bold font-heading bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                            {tournament.name}
+                        </h2>
+                        {tournament.status === 'draft' && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded font-black uppercase tracking-widest border border-yellow-500/20">Borrador</span>}
+                        {tournament.status === 'active' && <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded font-black uppercase tracking-widest border border-primary/20">En Curso</span>}
+                        {tournament.status === 'completed' && <span className="text-[10px] bg-gray-500/20 text-gray-400 px-2 py-0.5 rounded font-black uppercase tracking-widest border border-gray-500/20">Finalizado</span>}
+                    </div>
                     <div className="flex gap-3 text-xs text-gray-400 uppercase font-bold">
                         <span className="flex items-center gap-1"><Trophy className="w-3 h-3" /> {tournament.type === 'league' ? 'LIGA' : 'ELIMINATORIA'}</span>
                         <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {tournament.participants.length} JUGADORES</span>
                     </div>
                 </div>
             </div>
+
+            {tournament.status === 'completed' && tournament.winner && (
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="p-8 text-center bg-gradient-to-b from-primary/20 to-transparent rounded-3xl border border-primary/20 space-y-4 mb-6 relative overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] opacity-20" />
+                    <Trophy className="w-16 h-16 text-yellow-500 mx-auto animate-bounce" />
+                    <div className="space-y-1 relative z-10">
+                        <p className="text-[10px] text-primary uppercase font-black tracking-[0.2em]">Campeón del Torneo</p>
+                        <h3 className="text-4xl font-heading font-black italic uppercase tracking-tighter italic">
+                            {getPlayer(tournament.winner)?.avatar} {getPlayer(tournament.winner)?.name}
+                        </h3>
+                    </div>
+                </motion.div>
+            )}
 
             {tournament.type === 'league' ? (
                 <Card className="overflow-hidden p-0">

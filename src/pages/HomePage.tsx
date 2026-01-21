@@ -4,7 +4,9 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
-import { cn, calculatePlayerScore } from '../lib/utils';
+import { cn, getScoreBreakdown } from '../lib/utils';
+import { useState } from 'react';
+import { Info } from 'lucide-react';
 import type { Player, Match } from '../types';
 
 interface DashboardProps {
@@ -16,9 +18,14 @@ export function HomePage({ player }: DashboardProps) {
 
     const { matches } = useData();
 
-    const { rankedPlayers } = useLeaderboard();
-    const currentPlayerWithStats = rankedPlayers.find(p => p.id === player.id);
-    const myRank = rankedPlayers.findIndex(p => p.id === player.id) + 1;
+    const { rankedPlayers, recentRankedPlayers } = useLeaderboard();
+    const [rankingPeriod, setRankingPeriod] = useState<'all' | 'recent'>('all');
+    const displayRanking = rankingPeriod === 'all' ? rankedPlayers : recentRankedPlayers;
+
+    const currentPlayerWithStats = displayRanking.find(p => p.id === player.id);
+    const myRank = displayRanking.findIndex(p => p.id === player.id) + 1;
+
+    const [showBreakdown, setShowBreakdown] = useState<string | null>(null);
 
     // --- AUTOMATIC SESSION CLUSTERING LOGIC ---
     const getNames = (ids: string[]) => ids.map(id => players.find(p => p.id === id)?.name || 'Jugador').join(', ');
@@ -66,18 +73,25 @@ export function HomePage({ player }: DashboardProps) {
             const m = session[0];
             const t1 = getNames(m.players.team1);
             const t2 = getNames(m.players.team2);
+            const diff = Math.abs(m.score.team1 - m.score.team2);
+
+            let badge: string = m.type;
+            let label = 'Partido Finalizado';
+            if (diff >= 4) { badge = 'Goleada'; }
+            if (m.endedBy === 'penalties') { badge = 'Drama'; label = 'Definición por Penales'; }
+
             socialNews.push({
-                id: `session-${sIdx}`,
+                id: `match-${m.date}`,
                 type: 'match',
-                title: 'Partido Finalizado',
+                title: label,
                 content: `${t1} vs ${t2} (${m.score.team1} - ${m.score.team2})`,
                 time: new Date(m.date).toLocaleDateString(),
                 icon: <Activity className="w-4 h-4 text-primary" />,
-                badge: m.type
+                badge: badge
             });
         } else {
             // Grouped Session
-            const isH2H = participantIds.size === 2; // 1v1 or same 2 players swaping? No, just 2 people involved.
+            const isH2H = participantIds.size === 2;
 
             if (isH2H) {
                 const pIds = Array.from(participantIds);
@@ -86,7 +100,6 @@ export function HomePage({ player }: DashboardProps) {
                 let draws = 0;
 
                 session.forEach(m => {
-                    // This assumes 1v1 for simplification of summary
                     const p1Id = pIds[0];
                     const isP1Team1 = m.players.team1.includes(p1Id);
                     const s1 = isP1Team1 ? m.score.team1 : m.score.team2;
@@ -94,28 +107,29 @@ export function HomePage({ player }: DashboardProps) {
 
                     if (m.endedBy === 'regular') {
                         if (s1 > s2) p1Wins++; else if (s2 > s1) p2Wins++; else draws++;
-                    } else if (m.endedBy === 'penalties') {
-                        const winTeam = m.penaltyWinner;
+                    } else {
+                        // Penalties or Forfeit
+                        const winTeam = m.endedBy === 'penalties' ? m.penaltyWinner : (m.forfeitLoser === 1 ? 2 : 1);
                         const p1Team = isP1Team1 ? 1 : 2;
                         if (winTeam === p1Team) p1Wins++; else p2Wins++;
-                    } else if (m.endedBy === 'forfeit') {
-                        const loseTeam = m.forfeitLoser;
-                        const p1Team = isP1Team1 ? 1 : 2;
-                        if (loseTeam === p1Team) p2Wins++; else p1Wins++;
                     }
                 });
 
                 const p1Name = players.find(p => p.id === pIds[0])?.name || 'Jugador';
                 const p2Name = players.find(p => p.id === pIds[1])?.name || 'Jugador';
 
+                let badge = 'H2H';
+                if (count >= 5) badge = 'Maratón';
+                if (Math.abs(p1Wins - p2Wins) < 2 && count > 3) badge = 'Clásico';
+
                 socialNews.push({
                     id: `session-${sIdx}`,
                     type: 'session',
                     title: 'Duelo Finalizado',
-                    content: `${p1Name} ${p1Wins} - ${p2Wins} ${p2Name} (${count} partidas)`,
-                    time: 'Sesión Agrupada',
+                    content: `${p1Wins > p2Wins ? '👑 ' : ''}${p1Name} ${p1Wins} - ${p2Wins} ${p2Name}${p2Wins > p1Wins ? ' 👑' : ''}`,
+                    time: `${count} partidas jugadas`,
                     icon: <Users className="w-4 h-4 text-accent" />,
-                    badge: 'H2H'
+                    badge: badge
                 });
             } else {
                 // Multi-player Session
@@ -124,8 +138,8 @@ export function HomePage({ player }: DashboardProps) {
                     id: `session-${sIdx}`,
                     type: 'session',
                     title: 'Sesión Grupal',
-                    content: `${playerNames}: ${count} partidos registrados.`,
-                    time: 'Hace un momento',
+                    content: `Gran juntada de ${playerNames.split(',')[0]} y cía.`,
+                    time: `${count} partidos registrados`,
                     icon: <Users className="w-4 h-4 text-purple-500" />,
                     badge: `${participantIds.size} Jugadores`
                 });
@@ -311,41 +325,101 @@ export function HomePage({ player }: DashboardProps) {
             {/* Featured Ranking */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <Star className="w-3 h-3 text-yellow-500" /> Ranking
-                    </h3>
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <Star className="w-3 h-3 text-yellow-500" /> Ranking
+                        </h3>
+                        <div className="flex bg-white/5 p-0.5 rounded-lg border border-white/10 scale-90 origin-left">
+                            <button
+                                onClick={() => setRankingPeriod('all')}
+                                className={cn(
+                                    "px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all",
+                                    rankingPeriod === 'all' ? "bg-primary text-white" : "text-gray-500"
+                                )}
+                            >
+                                All-Time
+                            </button>
+                            <button
+                                onClick={() => setRankingPeriod('recent')}
+                                className={cn(
+                                    "px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all",
+                                    rankingPeriod === 'recent' ? "bg-primary text-white" : "text-gray-500"
+                                )}
+                            >
+                                30 Días
+                            </button>
+                        </div>
+                    </div>
                     <Link to="/stats" className="text-[10px] text-primary hover:underline uppercase font-bold tracking-widest">
                         Ver Todo
                     </Link>
                 </div>
                 <div className="space-y-2">
-                    {rankedPlayers.slice(0, 3).map((p, idx) => (
-                        <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5 transition-all hover:border-white/20", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>
-                            <div className="flex items-center gap-4">
-                                <div className="relative">
-                                    <span className={cn("absolute -top-3 -left-2 font-black text-xs italic font-mono", idx === 0 ? "text-yellow-500" : "text-gray-600")}>
-                                        #{idx + 1}
-                                    </span>
-                                    <span className="text-3xl drop-shadow-glow">{p.avatar}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="font-bold text-sm tracking-tight">{p.name} {p.id === player.id && "(Tú)"}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">
-                                            {p.derivedStats.matchesPlayed} PJ
+                    {displayRanking.slice(0, 3).map((p, idx) => {
+                        const breakdown = getScoreBreakdown(p.derivedStats);
+                        return (
+                            <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5 transition-all hover:border-white/20", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>
+                                <div className="flex items-center gap-4">
+                                    <div className="relative">
+                                        <span className={cn("absolute -top-3 -left-2 font-black text-xs italic font-mono", idx === 0 ? "text-yellow-500" : "text-gray-600")}>
+                                            #{idx + 1}
                                         </span>
-                                        <div className="w-1 h-1 bg-gray-700 rounded-full" />
-                                        <span className="text-[9px] text-primary font-black uppercase tracking-widest">
-                                            {calculatePlayerScore(p.derivedStats)} PTS
-                                        </span>
+                                        <span className="text-3xl drop-shadow-glow">{p.avatar}</span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-sm tracking-tight">{p.name} {p.id === player.id && "(Tú)"}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest">
+                                                {p.derivedStats.matchesPlayed} PJ
+                                            </span>
+                                            <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                                            <button
+                                                className="flex items-center gap-1 group/btn"
+                                                onClick={() => setShowBreakdown(showBreakdown === p.id ? null : p.id)}
+                                            >
+                                                <span className="text-[9px] text-primary font-black uppercase tracking-widest group-hover/btn:underline">
+                                                    {breakdown.total} PTS
+                                                </span>
+                                                <Info className="w-2.5 h-2.5 text-gray-600" />
+                                            </button>
+                                        </div>
+
+                                        {showBreakdown === p.id && (
+                                            <div className="mt-3 p-3 bg-black/40 rounded-xl border border-white/10 space-y-1.5 animate-in zoom-in-95 duration-200">
+                                                <div className="flex justify-between text-[8px] uppercase font-black">
+                                                    <span className="text-gray-500">Normalización:</span>
+                                                    <span className="text-white">x{(breakdown.confidence).toFixed(2)}</span>
+                                                </div>
+                                                <div className="h-px bg-white/5" />
+                                                <div className="flex justify-between text-[8px] uppercase font-black">
+                                                    <span className="text-gray-500">Victorias:</span>
+                                                    <span className="text-primary">+{breakdown.wins}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[8px] uppercase font-black">
+                                                    <span className="text-gray-500">Empates:</span>
+                                                    <span className="text-gray-300">+{breakdown.draws}</span>
+                                                </div>
+                                                <div className="flex justify-between text-[8px] uppercase font-black">
+                                                    <span className="text-gray-500">Dif. Goles:</span>
+                                                    <span className={breakdown.goalDiff >= 0 ? "text-green-500" : "text-red-500"}>
+                                                        {breakdown.goalDiff > 0 ? '+' : ''}{breakdown.goalDiff}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between text-[8px] uppercase font-black">
+                                                    <span className="text-gray-500">Actividad:</span>
+                                                    <span className="text-accent">+{breakdown.matches}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                            {idx === 0 && <Trophy className="w-5 h-5 text-yellow-500 opacity-50" />}
-                        </Card>
-                    ))}
+                                {idx === 0 && <Trophy className="w-5 h-5 text-yellow-500 opacity-50" />}
+                            </Card>
+                        );
+                    })}
                 </div>
             </section>
+
 
             {/* Community */}
             <section className="space-y-3">

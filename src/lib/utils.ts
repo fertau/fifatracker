@@ -7,20 +7,52 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+export interface ScoreBreakdown {
+    base: number;
+    activity: number;
+    confidence: number;
+    total: number;
+    wins: number;
+    draws: number;
+    goalDiff: number;
+    matches: number;
+}
+
 export function calculatePlayerScore(stats: PlayerStats | undefined): number {
     if (!stats) return 0;
+    const breakdown = getScoreBreakdown(stats);
+    return breakdown.total;
+}
 
-    // Formula: (Wins * 300) + (Draws * 100) + (GoalDiff * 10) + (Matches * 5)
-    // This emphasizes winning (regular league points scale x100)
-    // Adds value for Goal Diff
-    // Adds value for Activity (Matches played)
-
+export function getScoreBreakdown(stats: PlayerStats): ScoreBreakdown {
     const goalDiff = stats.goalsScored - stats.goalsConceded;
 
-    const score = (stats.wins * 300) +
-        (stats.draws * 100) +
-        (goalDiff * 10) +
-        (stats.matchesPlayed * 5);
+    // 1. Performance base
+    const base = (stats.wins * 300) + (stats.draws * 100) + (goalDiff * 10);
 
-    return Math.max(0, score); // Ensure no negative scores for display
+    // 2. Activity bonus with diminishing returns after 50 matches
+    let activity = 0;
+    if (stats.matchesPlayed <= 50) {
+        activity = stats.matchesPlayed * 5;
+    } else {
+        activity = (50 * 5) + ((stats.matchesPlayed - 50) * 1);
+    }
+
+    // 3. Confidence Factor (Normalización)
+    // Starts at 0.5 and reaches 1.0 at 20 matches played
+    const confidence = Math.min(1.0, 0.5 + (stats.matchesPlayed * 0.025));
+
+    const total = Math.max(0, Math.round((base + activity) * confidence));
+
+    return {
+        base,
+        activity,
+        confidence,
+        total,
+        wins: stats.wins * 300,
+        draws: stats.draws * 100,
+        goalDiff: goalDiff * 10,
+        matches: activity
+    };
 }
+

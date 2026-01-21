@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, Trophy, Play, ArrowLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Users, Trophy, Play, ArrowLeft, StopCircle, UserCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { useSession } from '../context/SessionContext';
+import { usePlayers } from '../hooks/usePlayers';
 
 export function PlayMenu() {
     const navigate = useNavigate();
+    const { session, isSessionActive, endSession, activePlayersCount } = useSession();
+    const { players } = usePlayers();
 
-
+    const presentPlayers = players.filter(p => session?.playersPresent.includes(p.id));
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
@@ -17,9 +21,59 @@ export function PlayMenu() {
                 </Button>
                 <div>
                     <h2 className="text-3xl font-bold font-heading uppercase tracking-tighter">¿Cómo jugamos?</h2>
-                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1 italic">Selecciona tu modalidad preferida</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1 italic">
+                        {isSessionActive ? 'Sesión en curso con amigos' : 'Selecciona tu modalidad preferida'}
+                    </p>
                 </div>
             </div>
+
+            {/* Active Session Status Card */}
+            <AnimatePresence>
+                {isSessionActive && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                    >
+                        <Card glass className="p-5 border-accent/30 bg-accent/5 overflow-hidden relative">
+                            <div className="absolute top-0 right-0 p-4 opacity-5">
+                                <Users className="w-16 h-16" />
+                            </div>
+
+                            <div className="flex items-start justify-between relative z-10">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-accent">Sesión Activa</span>
+                                    </div>
+
+                                    <div className="flex -space-x-2 overflow-hidden">
+                                        {presentPlayers.map(p => (
+                                            <div key={p.id} className="w-8 h-8 rounded-full border-2 border-background bg-white/10 flex items-center justify-center text-lg shadow-lg" title={p.name}>
+                                                {p.avatar}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <p className="text-xs text-gray-400 font-medium">
+                                        {activePlayersCount} {activePlayersCount === 1 ? 'jugador presente' : 'jugadores presentes'}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={endSession}
+                                    className="text-red-500 hover:text-red-400 hover:bg-red-500/10 gap-2 border border-red-500/20"
+                                >
+                                    <StopCircle className="w-4 h-4" />
+                                    Finalizar
+                                </Button>
+                            </div>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Section 1: Ways to Play */}
             <div className="space-y-4">
@@ -31,7 +85,7 @@ export function PlayMenu() {
                         {
                             id: 'match',
                             title: 'Partido rápido',
-                            description: 'Un partido casual 1v1 o 2v2.',
+                            description: isSessionActive ? 'Usar jugadores de la sesión actual.' : 'Selecciona jugadores y registra un partido.',
                             icon: <Play className="w-8 h-8 text-primary" />,
                             path: '/match/new',
                             color: 'border-primary/20 hover:border-primary',
@@ -39,12 +93,12 @@ export function PlayMenu() {
                         },
                         {
                             id: 'session',
-                            title: 'Nueva Sesión',
-                            description: 'Registra historial del día con amigos.',
-                            icon: <Users className="w-8 h-8 text-accent" />,
-                            path: '/session/new',
+                            title: isSessionActive ? 'Gestionar Sesión' : 'Nueva Sesión',
+                            description: 'Define quiénes están presentes para agilizar todo.',
+                            icon: isSessionActive ? <UserCheck className="w-8 h-8 text-accent" /> : <Users className="w-8 h-8 text-accent" />,
+                            path: isSessionActive ? '/session/manage' : '/session/new',
                             color: 'border-accent/20 hover:border-accent',
-                            badge: 'Social'
+                            badge: isSessionActive ? 'Activa' : 'Social'
                         }
                     ].map((option, idx) => (
                         <motion.div
@@ -124,8 +178,6 @@ export function PlayMenu() {
                     </Card>
                 </motion.div>
             </div>
-
-
 
             <div className="pt-4 text-center">
                 <p className="text-gray-500 text-[10px] uppercase tracking-widest font-black opacity-30">

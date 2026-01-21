@@ -9,6 +9,8 @@ interface SessionContextType {
     removePlayerFromSession: (playerId: string) => void;
     updateSessionPlayers: (playersIds: string[]) => void;
     isSessionActive: boolean;
+    isPlayerInSession: (playerId: string) => boolean;
+    activePlayersCount: number;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -81,7 +83,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             addPlayerToSession,
             removePlayerFromSession,
             updateSessionPlayers,
-            isSessionActive: !!session
+            isSessionActive: !!session,
+            isPlayerInSession: (id: string) => session?.playersPresent.includes(id) || false,
+            activePlayersCount: session?.playersPresent.length || 0
         }}>
             {children}
         </SessionContext.Provider>
