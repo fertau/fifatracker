@@ -24,6 +24,9 @@ interface DataContextType {
     deletePlayer: (playerId: string) => Promise<void>;
     updatePlayerFriends: (hostId: string, friendId: string) => Promise<void>;
     removePlayerFriend: (hostId: string, friendId: string) => Promise<void>;
+    sendFriendRequest: (fromId: string, toId: string) => Promise<void>;
+    acceptFriendRequest: (hostId: string, requesterId: string) => Promise<void>;
+    declineFriendRequest: (hostId: string, requesterId: string) => Promise<void>;
     getPlayer: (id: string) => Player | undefined;
     recalculateAllStats: () => Promise<void>;
     addTournament: (name: string, type: 'league' | 'knockout', participants: string[], createdBy: string) => Promise<Tournament>;
@@ -92,6 +95,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 pin, // Now required
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
+                friendRequests: [],
+                sentRequests: [],
+                visibility: 'public' as const,
                 createdAt: Date.now(),
                 ownerId: auth.currentUser?.uid || 'anonymous'
             };
@@ -145,6 +151,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
             await updateDoc(friendRef, { friends: arrayRemove(hostId) });
         } catch (error) {
             console.error('❌ Error removing friend:', error);
+            throw error;
+        }
+    };
+
+    const sendFriendRequest = async (fromId: string, toId: string) => {
+        try {
+            const fromRef = doc(db, 'players', fromId);
+            const toRef = doc(db, 'players', toId);
+            await updateDoc(fromRef, { sentRequests: arrayUnion(toId) });
+            await updateDoc(toRef, { friendRequests: arrayUnion(fromId) });
+        } catch (error) {
+            console.error('❌ Error sending friend request:', error);
+            throw error;
+        }
+    };
+
+    const acceptFriendRequest = async (hostId: string, requesterId: string) => {
+        try {
+            const hostRef = doc(db, 'players', hostId);
+            const requesterRef = doc(db, 'players', requesterId);
+            const { arrayRemove } = await import('firebase/firestore');
+
+            // Add each other to friends list
+            await updateDoc(hostRef, {
+                friends: arrayUnion(requesterId),
+                friendRequests: arrayRemove(requesterId)
+            });
+            await updateDoc(requesterRef, {
+                friends: arrayUnion(hostId),
+                sentRequests: arrayRemove(hostId)
+            });
+        } catch (error) {
+            console.error('❌ Error accepting friend request:', error);
+            throw error;
+        }
+    };
+
+    const declineFriendRequest = async (hostId: string, requesterId: string) => {
+        try {
+            const hostRef = doc(db, 'players', hostId);
+            const requesterRef = doc(db, 'players', requesterId);
+            const { arrayRemove } = await import('firebase/firestore');
+
+            await updateDoc(hostRef, { friendRequests: arrayRemove(requesterId) });
+            await updateDoc(requesterRef, { sentRequests: arrayRemove(hostId) });
+        } catch (error) {
+            console.error('❌ Error declining friend request:', error);
             throw error;
         }
     };
@@ -325,6 +378,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
             deletePlayer,
             updatePlayerFriends,
             removePlayerFriend,
+            sendFriendRequest,
+            acceptFriendRequest,
+            declineFriendRequest,
             getPlayer,
             recalculateAllStats,
             addTournament,

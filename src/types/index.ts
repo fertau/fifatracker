@@ -15,7 +15,9 @@ export interface Player {
     stats: PlayerStats;
     derivedStats?: PlayerStats;
     friends: string[]; // List of Player IDs
-    friendRequests?: string[]; // Array of player IDs who sent a request
+    friendRequests: string[]; // IDs of players who sent a request to this player
+    sentRequests: string[]; // IDs of players this player sent a request to
+    visibility: 'public' | 'private';
     pin: string; // Security PIN (required)
     ownerId: string;
     createdAt: number;

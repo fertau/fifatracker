@@ -1,7 +1,19 @@
 import { useData } from '../context/DataContext';
 
 export function usePlayers() {
-    const { players, addPlayer, updatePlayer, deletePlayer, updatePlayerFriends, removePlayerFriend, getPlayer, addMatch } = useData();
+    const {
+        players,
+        addPlayer,
+        updatePlayer,
+        deletePlayer,
+        updatePlayerFriends,
+        removePlayerFriend,
+        sendFriendRequest,
+        acceptFriendRequest,
+        declineFriendRequest,
+        getPlayer,
+        addMatch
+    } = useData();
 
     const createPlayer = async (name: string, avatar: string, photoURL?: string, pin?: string) => {
         return addPlayer(name, avatar, photoURL, pin);
@@ -75,5 +87,19 @@ export function usePlayers() {
 
     const loading = false; // Placeholder
 
-    return { players, loading, createPlayer, updatePlayer, deletePlayer, saveMatch, addFriend, removeFriend, getFriendsOf, autoFriendship };
+    return {
+        players,
+        loading,
+        createPlayer,
+        updatePlayer,
+        deletePlayer,
+        saveMatch,
+        addFriend,
+        removeFriend,
+        sendFriendRequest,
+        acceptFriendRequest,
+        declineFriendRequest,
+        getFriendsOf,
+        autoFriendship
+    };
 }

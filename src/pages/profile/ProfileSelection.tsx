@@ -20,6 +20,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const [newPin, setNewPin] = useState('');
     const [selectedAvatar, setSelectedAvatar] = useState('🦁');
     const [photoURL, setPhotoURL] = useState<string | undefined>();
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Login flow
     const [selectedPlayerForLogin, setSelectedPlayerForLogin] = useState<Player | null>(null);
@@ -208,63 +209,81 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                             <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Selecciona tu perfil para entrar</p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            {players.map((player) => (
+                        <div className="space-y-4">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="BUSCAR PERFIL..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all font-bold uppercase tracking-widest placeholder:text-gray-700"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                {players
+                                    .filter(p => {
+                                        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
+                                        if (searchQuery.trim() === '') return p.visibility !== 'private';
+                                        return matchesSearch;
+                                    })
+                                    .map((player) => (
+                                        <Card
+                                            key={player.id}
+                                            glass
+                                            className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6 relative border-white/5 bg-white/[0.02]"
+                                            onClick={() => setSelectedPlayerForLogin(player)}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                        >
+                                            {localStorage.getItem('is_fertau_admin') === 'true' && player.name.toLowerCase() !== 'fertau' && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (confirm(`¿Eliminar a ${player.name}?`)) {
+                                                            deletePlayer(player.id);
+                                                        }
+                                                    }}
+                                                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+
+                                            {player.pin && (
+                                                <div className="absolute top-2 left-2 p-1 rounded-full bg-primary/10 text-primary">
+                                                    <Lock className="w-3 h-3" />
+                                                </div>
+                                            )}
+
+                                            {player.photoURL ? (
+                                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 group-hover:border-primary transition-colors">
+                                                    <img src={player.photoURL} alt={player.name} className="w-full h-full object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="text-5xl drop-shadow-[0_0_10px_rgba(var(--color-primary),0.3)]">
+                                                    {player.avatar}
+                                                </div>
+                                            )}
+                                            <span className="font-heading text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
+                                                {player.name}
+                                            </span>
+                                        </Card>
+                                    ))}
+
                                 <Card
-                                    key={player.id}
-                                    glass
-                                    className="cursor-pointer group hover:border-primary transition-all flex flex-col items-center gap-3 py-6 relative border-white/5 bg-white/[0.02]"
-                                    onClick={() => setSelectedPlayerForLogin(player)}
+                                    glass={false}
+                                    className="cursor-pointer border-dashed border-2 border-white/10 hover:border-primary/50 flex flex-col items-center justify-center gap-3 py-6 text-gray-500 hover:text-white transition-all bg-transparent"
+                                    onClick={() => setIsCreating(true)}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    {localStorage.getItem('is_fertau_admin') === 'true' && player.name.toLowerCase() !== 'fertau' && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (confirm(`¿Eliminar a ${player.name}?`)) {
-                                                    deletePlayer(player.id);
-                                                }
-                                            }}
-                                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    )}
-
-                                    {player.pin && (
-                                        <div className="absolute top-2 left-2 p-1 rounded-full bg-primary/10 text-primary">
-                                            <Lock className="w-3 h-3" />
-                                        </div>
-                                    )}
-
-                                    {player.photoURL ? (
-                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 group-hover:border-primary transition-colors">
-                                            <img src={player.photoURL} alt={player.name} className="w-full h-full object-cover" />
-                                        </div>
-                                    ) : (
-                                        <div className="text-5xl drop-shadow-[0_0_10px_rgba(var(--color-primary),0.3)]">
-                                            {player.avatar}
-                                        </div>
-                                    )}
-                                    <span className="font-heading text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
-                                        {player.name}
-                                    </span>
+                                    <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center">
+                                        <Plus className="w-6 h-6" />
+                                    </div>
+                                    <span className="font-heading font-bold text-xs uppercase tracking-widest">Nuevo Perfil</span>
                                 </Card>
-                            ))}
-
-                            <Card
-                                glass={false}
-                                className="cursor-pointer border-dashed border-2 border-white/10 hover:border-primary/50 flex flex-col items-center justify-center gap-3 py-6 text-gray-500 hover:text-white transition-all bg-transparent"
-                                onClick={() => setIsCreating(true)}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center">
-                                    <Plus className="w-6 h-6" />
-                                </div>
-                                <span className="font-heading font-bold text-xs uppercase tracking-widest">Nuevo Perfil</span>
-                            </Card>
+                            </div>
                         </div>
                     </motion.div>
                 ) : (
