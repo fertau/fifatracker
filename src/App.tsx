@@ -106,7 +106,7 @@ function MainApp() {
                 <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
                 <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
                 <Route path="/match/new" element={<NewMatch />} />
-                <Route path="/tournaments" element={<TournamentList currentUser={currentPlayer} />} />
+                <Route path="/tournaments" element={<TournamentList />} />
                 <Route path="/tournament/new" element={<NewTournament currentUser={currentPlayer} />} />
                 <Route path="/tournament/:id" element={<TournamentDetails currentUser={currentPlayer} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

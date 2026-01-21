@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shuffle, Check, RefreshCw } from 'lucide-react';
+import { Check, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import type { Player } from '../../types';
@@ -8,11 +8,10 @@ import type { Player } from '../../types';
 interface FixtureDrawProps {
     participants: Player[];
     onConfirm: (fixtures: { team1: string[], team2: string[] }[]) => void;
-    onCancel: () => void;
     generateFixtures: (players: string[]) => { team1: string[], team2: string[] }[];
 }
 
-export function FixtureDraw({ participants, onConfirm, onCancel, generateFixtures }: FixtureDrawProps) {
+export function FixtureDraw({ participants, onConfirm, generateFixtures }: FixtureDrawProps) {
     const [step, setStep] = useState<'shuffling' | 'drawing' | 'review'>('shuffling');
     const [shuffledParticipants, setShuffledParticipants] = useState<Player[]>([]);
     const [generatedFixtures, setGeneratedFixtures] = useState<{ team1: string[], team2: string[] }[]>([]);

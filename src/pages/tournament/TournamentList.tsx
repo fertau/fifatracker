@@ -5,16 +5,23 @@ import { useTournaments } from '../../hooks/useTournaments';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
-interface TournamentListProps {
-    currentUser: import('../../types').Player | null;
-}
 
-export function TournamentList({ currentUser }: TournamentListProps) {
+
+export function TournamentList() {
     const navigate = useNavigate();
-    const { tournaments, getTournamentMatches } = useTournaments();
+    const { tournaments, getTournamentMatches, deleteTournament } = useTournaments();
 
     const activeTournaments = tournaments.filter(t => t.status === 'active' || t.status === 'draft').sort((a, b) => b.createdAt - a.createdAt);
     const finishedTournaments = tournaments.filter(t => t.status === 'completed').sort((a, b) => b.createdAt - a.createdAt);
+
+    // --- TEMPORARY: DELETE ALL FUNCTIONALITY ---
+    const handleDeleteAll = async () => {
+        if (!window.confirm('¿ESTÁS SEGURO? Esto borrará TODOS los torneos permanentemente.')) return;
+
+        for (const t of tournaments) {
+            await deleteTournament(t.id);
+        }
+    };
 
     return (
         <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -139,6 +146,13 @@ export function TournamentList({ currentUser }: TournamentListProps) {
                     </div>
                 </section>
             )}
+
+            {/* DANGER ZONE: CLEANUP */}
+            <div className="pt-10 border-t border-red-500/20 mt-10 text-center">
+                <Button variant="ghost" className="text-red-500 text-xs uppercase font-black tracking-widest hover:bg-red-500/10" onClick={handleDeleteAll}>
+                    Eliminar TODOS los torneos (Cleanup)
+                </Button>
+            </div>
         </div>
     );
 }

@@ -110,6 +110,23 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
         }
     };
 
+    const handleMoveFixture = async (index: number, direction: 'up' | 'down') => {
+        if (!tournament?.fixtures) return;
+        const newFixtures = [...tournament.fixtures];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+
+        if (targetIndex < 0 || targetIndex >= newFixtures.length) return;
+
+        const [moved] = newFixtures.splice(index, 1);
+        newFixtures.splice(targetIndex, 0, moved);
+
+        try {
+            await updateTournament(tournament.id, { fixtures: newFixtures });
+        } catch (error) {
+            console.error('Error reordering fixtures:', error);
+        }
+    };
+
     const isAdmin = currentUser && tournament && currentUser.id === tournament.createdBy;
 
     return (
@@ -202,7 +219,6 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
                             participants={tournament.participants.map(id => getPlayer(id)).filter(Boolean) as Player[]}
                             generateFixtures={tournament.type === 'league' ? generateLeagueFixtures : generateKnockoutFixtures}
                             onConfirm={handleDrawConfirm}
-                            onCancel={() => setShowDraw(false)}
                         />
                     )}
                 </div>
@@ -256,6 +272,29 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
                             >
                                 <Card glass className={`p-4 ${match ? 'opacity-60' : ''}`}>
                                     <div className="flex items-center justify-between gap-4">
+                                        {/* Reorder Controls */}
+                                        {isAdmin && tournamentMatches.length === 0 && (
+                                            <div className="flex flex-col gap-1 -ml-2">
+                                                <button
+                                                    onClick={() => handleMoveFixture(idx, 'up')}
+                                                    disabled={idx === 0}
+                                                    className="p-1 hover:text-primary disabled:opacity-20 transition-colors"
+                                                >
+                                                    <svg className="w-3 h-3 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleMoveFixture(idx, 'down')}
+                                                    disabled={idx === fixtures.length - 1}
+                                                    className="p-1 hover:text-primary disabled:opacity-20 transition-colors"
+                                                >
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        )}
                                         <div className="flex-1 text-right font-bold text-sm">
                                             {p1?.name} {p1?.avatar}
                                         </div>

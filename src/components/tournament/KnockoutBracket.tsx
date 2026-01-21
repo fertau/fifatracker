@@ -47,7 +47,10 @@ export function KnockoutBracket({ tournament, matches, getPlayer }: KnockoutBrac
         let roundMatches = (totalParticipants / 2); // Start with R1 count
         if (!Number.isInteger(roundMatches)) roundMatches = Math.ceil(totalParticipants / 2); // Handle odd? Logic assumed power of 2.
 
-        let offset = 0;
+        // Calculate Y position
+        // Space between matches = 2^(round) * height_unit
+        // const space = Math.pow(2, round) * 60;
+
         let p = 1;
         while (p < totalParticipants) p *= 2;
         let currentRoundSize = p / 2;

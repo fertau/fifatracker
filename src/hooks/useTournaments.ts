@@ -1,5 +1,5 @@
 import { useData } from '../context/DataContext';
-import type { Tournament, Match } from '../types';
+
 
 export function useTournaments() {
     const { tournaments, addTournament, matches } = useData();
@@ -199,6 +199,8 @@ export function useTournaments() {
         getTournamentMatches,
         calculateLeagueStandings,
         generateLeagueFixtures,
-        generateKnockoutFixtures
+        generateKnockoutFixtures,
+        deleteTournament: useData().deleteTournament,
+        updateTournament: useData().updateTournament
     };
 }
