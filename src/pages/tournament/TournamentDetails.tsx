@@ -25,6 +25,7 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
     const { players } = usePlayers();
 
     const [showDraw, setShowDraw] = useState(false);
+    const [autoFinishPrompted, setAutoFinishPrompted] = useState(false);
 
     // Get tournament from navigation state (if just created) or from tournaments array
     const tournamentFromState = location.state?.tournament as Tournament | undefined;
@@ -37,6 +38,19 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
     // Persisted fixtures OR generate default if not yet saved (but we only generate default if we want to show 'preview', 
     // actually requirement is NOT to show preview. But we need empty array if null.)
     const fixtures = tournament?.fixtures || [];
+
+    // Auto-finalize detection
+    useState(() => {
+        if (tournament?.status === 'active' && fixtures.length > 0 && !autoFinishPrompted) {
+            const allPlayed = fixtures.every((_, idx) => tournamentMatches.some(m => m.tournamentFixtureSlot === idx));
+            if (allPlayed) {
+                setAutoFinishPrompted(true);
+                setTimeout(() => {
+                    handleFinish();
+                }, 1000);
+            }
+        }
+    });
 
     if (!tournament) {
         return (

@@ -5,6 +5,7 @@ import { useAdvancedStats } from '../hooks/useAdvancedStats';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { cn } from '../lib/utils';
 import type { Player } from '../types';
 
 interface StatsPageProps {
@@ -223,6 +224,105 @@ export function StatsPage({ player }: StatsPageProps) {
                     </div>
                 </Card>
             </div>
+
+            {/* Performance Charts */}
+            <section className="space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <TrendingUp className="w-3 h-3 text-primary" /> Evolución de Rendimiento
+                    </h3>
+                </div>
+
+                <Card glass className="p-6 border-white/5 bg-white/[0.02] space-y-6">
+                    {/* Score Chart */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Puntaje Total</p>
+                                <h4 className="text-xl font-bold font-heading italic uppercase text-primary">Tendencia de Score</h4>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Últimos {stats.scoreHistory.length} partidos</span>
+                            </div>
+                        </div>
+
+                        <div className="h-40 w-full relative">
+                            {stats.scoreHistory.length > 1 ? (
+                                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.3" />
+                                            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+                                        </linearGradient>
+                                    </defs>
+                                    {(() => {
+                                        const min = Math.min(...stats.scoreHistory);
+                                        const max = Math.max(...stats.scoreHistory);
+                                        const range = Math.max(1, max - min);
+                                        const points = stats.scoreHistory.map((v, i) => {
+                                            const x = (i / (stats.scoreHistory.length - 1)) * 100;
+                                            const y = 100 - ((v - min) / range) * 100;
+                                            return `${x},${y}`;
+                                        }).join(' ');
+
+                                        const pathData = `M ${points}`;
+                                        const areaData = `${pathData} L 100,100 L 0,100 Z`;
+
+                                        return (
+                                            <>
+                                                <path d={areaData} fill="url(#scoreGradient)" />
+                                                <path d={pathData} fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                                {stats.scoreHistory.map((v, i) => (
+                                                    <circle
+                                                        key={i}
+                                                        cx={`${(i / (stats.scoreHistory.length - 1)) * 100}%`}
+                                                        cy={`${100 - ((v - min) / range) * 100}%`}
+                                                        r="3"
+                                                        fill="var(--color-primary)"
+                                                        className="hover:r-5 transition-all cursor-crosshair"
+                                                    />
+                                                ))}
+                                            </>
+                                        );
+                                    })()}
+                                </svg>
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-gray-700 uppercase font-black text-[10px] border border-dashed border-white/5 rounded-xl">
+                                    Juega más partidos para ver tendencia
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Goals Trend */}
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Promedio de Goleo</p>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-3xl font-black font-mono tracking-tighter">
+                                        {(stats.totalGoalsScored / (stats.matchesPlayed || 1)).toFixed(2)}
+                                    </h4>
+                                    {stats.goalsPerMatchHistory.length > 1 && (
+                                        <div className={cn(
+                                            "flex items-center text-[10px] font-black px-2 py-0.5 rounded-full",
+                                            stats.goalsPerMatchHistory[stats.goalsPerMatchHistory.length - 1] >= stats.goalsPerMatchHistory[0]
+                                                ? "bg-green-500/20 text-green-500"
+                                                : "bg-red-500/20 text-red-500"
+                                        )}>
+                                            {stats.goalsPerMatchHistory[stats.goalsPerMatchHistory.length - 1] >= stats.goalsPerMatchHistory[0] ? '+' : ''}
+                                            {((stats.goalsPerMatchHistory[stats.goalsPerMatchHistory.length - 1] - stats.goalsPerMatchHistory[0]) / (stats.goalsPerMatchHistory[0] || 1) * 100).toFixed(0)}%
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="p-3 bg-accent/20 rounded-2xl border border-accent/20">
+                                <Award className="w-6 h-6 text-accent" />
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            </section>
 
             {/* Back Button */}
             <Link to="/">

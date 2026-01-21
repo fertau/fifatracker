@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogOut, ArrowLeft, Camera, User, Lock, X } from 'lucide-react';
+import { Trash2, LogOut, ArrowLeft, Camera, User, Lock, X, TrendingUp } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { PhotoCapture } from '../../components/PhotoCapture';
 
+import { useData } from '../../context/DataContext';
+import { ACHIEVEMENTS, calculateUnlockedAchievements } from '../../lib/achievements';
+import { getLanguage, setLanguage } from '../../lib/i18n';
 import type { Player } from '../../types';
 
 interface ProfilePageProps {
@@ -18,13 +21,15 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
     const { deletePlayer, updatePlayer } = usePlayers();
     const navigate = useNavigate();
     const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+    const { matches } = useData();
+    const unlockedIds = calculateUnlockedAchievements(player, matches);
+    const unlockedAchievements = ACHIEVEMENTS.filter(a => unlockedIds.includes(a.id));
+
     const [showPinChange, setShowPinChange] = useState(false);
     const [currentPin, setCurrentPin] = useState('');
     const [newPin, setNewPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
     const [pinError, setPinError] = useState('');
-
-
 
     const handleDelete = async () => {
         if (confirm(`¿Estás seguro de que quieres eliminar permanentemente a ${player.name}? Esta acción no se puede deshacer.`)) {
@@ -138,7 +143,38 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                     <h1 className="text-3xl font-bold tracking-tighter font-heading italic uppercase">{player.name}</h1>
                 </div>
 
-
+                {/* Achievements Section */}
+                {unlockedAchievements.length > 0 && (
+                    <div className="pt-6 border-t border-white/5 space-y-3">
+                        <div className="flex items-center justify-between px-1">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Logros Desbloqueados</h3>
+                            <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                {unlockedAchievements.length} / {ACHIEVEMENTS.length}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                            {ACHIEVEMENTS.map(achievement => {
+                                const isUnlocked = unlockedIds.includes(achievement.id);
+                                return (
+                                    <div
+                                        key={achievement.id}
+                                        className={`group relative aspect-square rounded-2xl border flex items-center justify-center text-2xl transition-all duration-300 ${isUnlocked
+                                            ? `bg-gradient-to-br ${achievement.color} border-white/20 shadow-lg scale-100`
+                                            : 'bg-white/5 border-white/5 opacity-20 grayscale scale-90'
+                                            }`}
+                                        title={achievement.name}
+                                    >
+                                        {achievement.icon}
+                                        <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-32 bg-black/90 border border-white/10 p-2 rounded-xl text-[8px] uppercase font-black tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 text-center">
+                                            <p className="text-white mb-0.5">{achievement.name}</p>
+                                            <p className="text-gray-500 leading-tight">{achievement.description}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* PIN Section */}
                 <div className="pt-6 border-t border-white/5 space-y-3">
@@ -153,6 +189,30 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                     >
                         <Lock className="w-4 h-4 mr-2" /> Cambiar PIN
                     </Button>
+                </div>
+
+                {/* Language Section */}
+                <div className="pt-6 border-t border-white/5 space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                        <TrendingUp className="w-4 h-4 text-primary" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Preferencia de Idioma</h3>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant={getLanguage() === 'es' ? 'primary' : 'secondary'}
+                            className="flex-1 rounded-2xl py-4 font-bold text-xs"
+                            onClick={() => setLanguage('es')}
+                        >
+                            Español
+                        </Button>
+                        <Button
+                            variant={getLanguage() === 'en' ? 'primary' : 'secondary'}
+                            className="flex-1 rounded-2xl py-4 font-bold text-xs"
+                            onClick={() => setLanguage('en')}
+                        >
+                            English
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Main Actions */}

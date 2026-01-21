@@ -13,6 +13,8 @@ interface AdvancedStats {
     losses: number;
     totalGoalsScored: number;
     totalGoalsConceded: number;
+    scoreHistory: number[];
+    goalsPerMatchHistory: number[];
 }
 
 export function useAdvancedStats(playerId: string) {
@@ -37,7 +39,10 @@ export function useAdvancedStats(playerId: string) {
         let totalGoalsScored = 0;
         let totalGoalsConceded = 0;
 
-        playerMatches.forEach(match => {
+        const scoreHistory: number[] = [];
+        const goalsPerMatchHistory: number[] = [];
+
+        playerMatches.forEach((match) => {
             const isTeam1 = match.players.team1.includes(playerId);
             const myTeam = isTeam1 ? match.players.team1 : match.players.team2;
             const opponentTeam = isTeam1 ? match.players.team2 : match.players.team1;
@@ -64,6 +69,12 @@ export function useAdvancedStats(playerId: string) {
             if (result === 'win') wins++;
             if (result === 'draw') draws++;
             if (result === 'loss') losses++;
+
+            // Calculate score up to this point
+            const currentGD = totalGoalsScored - totalGoalsConceded;
+            const currentScore = (wins * 300) + (draws * 100) + (currentGD * 10) + (matchesPlayed * 5);
+            scoreHistory.push(currentScore);
+            goalsPerMatchHistory.push(totalGoalsScored / matchesPlayed);
 
             // Solo vs Team stats
             const isSolo = myTeam.length === 1;
@@ -136,7 +147,9 @@ export function useAdvancedStats(playerId: string) {
             draws,
             losses,
             totalGoalsScored,
-            totalGoalsConceded
+            totalGoalsConceded,
+            scoreHistory,
+            goalsPerMatchHistory
         };
     };
 

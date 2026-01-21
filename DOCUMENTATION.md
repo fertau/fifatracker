@@ -63,9 +63,29 @@ Fomenta la conectividad entre jugadores manteniendo la privacidad.
     *   **Mi QR**: Genera un código para que otros te agreguen.
     *   **Escáner**: Usa la cámara para agregar amigos instantáneamente sin escribir.
 
+### Interacciones Sociales
+*   **Likes**: Los jugadores pueden dar "Me Gusta" (corazón) a los hitos y noticias destacadas en el Dashboard.
+*   **Feed de Novedades**: Sistema dinámico que agrupa sesiones de juego y destaca "Goleadas", "Clásicos" y nuevos récords.
+
 ---
 
-## 5. Torneos
+## 5. Logros y Desempeño
+La aplicación fomenta la maestría mediante el seguimiento de hitos personales.
+
+### Sistema de Logros (Badges)
+*   **Hat-trick**: Anotar 3 o más goles en un solo partido.
+*   **Clean Sheet**: Ganar un partido manteniendo el arco en cero (0 goles en contra).
+*   **Unbeatable**: Lograr una racha de 5 victorias consecutivas.
+*   **Goal Machine**: Alcanzar un total de 50 goles anotados.
+*   **Tournament King**: Ganar al menos un torneo oficial.
+
+### Analítica Avanzada
+*   **Evolución de Rendimiento**: Gráfico visual de tendencia que muestra la progresión del Score histórico.
+*   **Tendencia de Goleo**: Indicador porcentual de mejora o declive en el promedio de goles por partido.
+
+---
+
+## 6. Torneos
 Gestión de competencias estructuradas con persistencia de datos.
 
 ### Modos de Torneo
@@ -78,8 +98,21 @@ Gestión de competencias estructuradas con persistencia de datos.
 
 ---
 
-## 6. Tecnología PWA
-Diseñado para sentirse como una aplicación nativa.
+### Automatización
+*   **Auto-Finalizado**: El sistema detecta automáticamente cuando se han jugado todos los partidos de una liga o fase y activa la celebración del campeón.
+*   **Avance de Llaves (Knockout)**: En torneos de eliminación directa, los ganadores avanzan automáticamente al siguiente slot del bracket al registrar el resultado.
+
+---
+
+## 7. Accesibilidad y PWA
+Diseñado para sentirse como una aplicación nativa y ser accesible globalmente.
+
+### Multi-Lenguaje
+*   Configuración de idioma (Español / Inglés) persistente por perfil.
+*   Traducción dinámica de la interfaz, estadísticas y secciones de perfil.
+
+### Tecnología PWA
 *   **Instalable**: Icono personalizado en la pantalla de inicio.
 *   **Splash Screen**: Animación de carga de marca.
 *   **Branding**: Interfaz "vibrant/glassmorphism" de alta gama optimizada para móviles.
+

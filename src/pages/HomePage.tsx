@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
@@ -26,6 +26,16 @@ export function HomePage({ player }: DashboardProps) {
     const myRank = displayRanking.findIndex(p => p.id === player.id) + 1;
 
     const [showBreakdown, setShowBreakdown] = useState<string | null>(null);
+    const [likedNews, setLikedNews] = useState<Record<string, boolean>>(() => {
+        const saved = localStorage.getItem('social_likes');
+        return saved ? JSON.parse(saved) : {};
+    });
+
+    const toggleLike = (newsId: string) => {
+        const newLikes = { ...likedNews, [newsId]: !likedNews[newsId] };
+        setLikedNews(newLikes);
+        localStorage.setItem('social_likes', JSON.stringify(newLikes));
+    };
 
     // --- AUTOMATIC SESSION CLUSTERING LOGIC ---
     const getNames = (ids: string[]) => ids.map(id => players.find(p => p.id === id)?.name || 'Jugador').join(', ');
@@ -230,7 +240,21 @@ export function HomePage({ player }: DashboardProps) {
                                             <span className="text-[10px] text-gray-600 uppercase font-black tracking-widest">{news.time}</span>
                                         </div>
                                     </div>
-                                    <p className="text-lg font-bold text-gray-200 leading-tight">{news.content}</p>
+                                    <div className="flex justify-between items-start mt-auto">
+                                        <p className="text-lg font-bold text-gray-200 leading-tight pr-8">{news.content}</p>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                toggleLike(news.id);
+                                            }}
+                                            className={cn(
+                                                "p-2 rounded-full transition-all duration-300",
+                                                likedNews[news.id] ? "text-red-500 scale-125" : "text-gray-700 hover:text-red-400 hover:scale-110"
+                                            )}
+                                        >
+                                            <Heart className={cn("w-5 h-5", likedNews[news.id] && "fill-current")} />
+                                        </button>
+                                    </div>
                                 </Card>
                             </div>
                         ))
