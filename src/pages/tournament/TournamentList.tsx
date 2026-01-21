@@ -148,11 +148,13 @@ export function TournamentList() {
             )}
 
             {/* DANGER ZONE: CLEANUP */}
-            <div className="pt-10 border-t border-red-500/20 mt-10 text-center">
-                <Button variant="ghost" className="text-red-500 text-xs uppercase font-black tracking-widest hover:bg-red-500/10" onClick={handleDeleteAll}>
-                    Eliminar TODOS los torneos (Cleanup)
-                </Button>
-            </div>
+            {localStorage.getItem('is_fertau_admin') === 'true' && (
+                <div className="pt-10 border-t border-red-500/20 mt-10 text-center">
+                    <Button variant="ghost" className="text-red-500 text-xs uppercase font-black tracking-widest hover:bg-red-500/10" onClick={handleDeleteAll}>
+                        Eliminar TODOS los torneos (Cleanup)
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
