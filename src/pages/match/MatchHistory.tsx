@@ -4,7 +4,6 @@ import { ArrowLeft, Trash2, Calendar, Trophy, Edit2, AlertTriangle, X, Save, Clo
 import { useData } from '../../context/DataContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
 import { cn } from '../../lib/utils';
 import type { Match, Player, AuditLogEntry } from '../../types';
 import { useAdvancedStats } from '../../hooks/useAdvancedStats';
@@ -156,7 +155,7 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
                 if (result !== 'draw') {
                     currentStreak = { type: result, count: 1 };
                 }
-            } else if (currentStreak.type && currentStreak.type === result && result !== 'draw') {
+            } else if (currentStreak.type && currentStreak.type === result) {
                 currentStreak.count++;
             }
         });
