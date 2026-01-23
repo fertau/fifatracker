@@ -4,6 +4,7 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
+import { Skeleton } from '../components/ui/Skeleton';
 import { cn, getScoreBreakdown } from '../lib/utils';
 import { useState } from 'react';
 import { Info } from 'lucide-react';
@@ -17,7 +18,7 @@ interface DashboardProps {
 export function HomePage({ player }: DashboardProps) {
     const { players } = usePlayers();
 
-    const { matches } = useData();
+    const { matches, loading } = useData();
 
     const { rankedPlayers, recentRankedPlayers } = useLeaderboard();
     const [rankingPeriod, setRankingPeriod] = useState<'all' | 'recent'>('all');
@@ -214,7 +215,26 @@ export function HomePage({ player }: DashboardProps) {
                 </div>
 
                 <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-4 px-4 scrollbar-hide">
-                    {socialNews.length > 0 ? (
+                    {loading ? (
+                        // Skeleton loading state
+                        <>
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="w-full flex-shrink-0 snap-center scroll-ml-4">
+                                    <Card glass={false} className="border-white/5 bg-white/[0.02] p-6 h-full">
+                                        <div className="flex items-center gap-4 mb-3">
+                                            <Skeleton variant="avatar" className="w-12 h-12" />
+                                            <div className="flex-1 space-y-2">
+                                                <Skeleton variant="text" className="w-24 h-3" />
+                                                <Skeleton variant="text" className="w-16 h-2" />
+                                            </div>
+                                        </div>
+                                        <Skeleton variant="text" className="w-full h-5 mt-4" />
+                                        <Skeleton variant="text" className="w-3/4 h-5 mt-2" />
+                                    </Card>
+                                </div>
+                            ))}
+                        </>
+                    ) : socialNews.length > 0 ? (
                         socialNews.slice(0, 5).map(news => (
                             <div key={news.id} className="w-full flex-shrink-0 snap-center scroll-ml-4">
                                 <Card glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.02] p-6 h-full flex flex-col justify-center">
