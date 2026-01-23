@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart, ChevronRight } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { cn, getScoreBreakdown } from '../lib/utils';
 import { useState } from 'react';
 import { Info } from 'lucide-react';
+import { FormStateDetail } from '../components/dashboard/FormStateDetail';
 import type { Player, Match } from '../types';
 
 interface DashboardProps {
@@ -26,6 +27,7 @@ export function HomePage({ player }: DashboardProps) {
     const myRank = displayRanking.findIndex((p: any) => p.id === player.id) + 1;
 
     const [showBreakdown, setShowBreakdown] = useState<string | null>(null);
+    const [showFormDetail, setShowFormDetail] = useState(false);
     const [likedNews, setLikedNews] = useState<Record<string, boolean>>(() => {
         const saved = localStorage.getItem('social_likes');
         return saved ? JSON.parse(saved) : {};
@@ -279,43 +281,109 @@ export function HomePage({ player }: DashboardProps) {
                 </div>
 
                 <div className="space-y-3">
-                    {/* Line 1: Form */}
-                    <Card glass className="p-4 border-white/5 bg-white/[0.02]">
-                        <div className="flex justify-between items-center">
-                            <label className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Estado de Forma</label>
-                            <div className="flex gap-1.5">
-                                {(() => {
-                                    const myLastMatches = [...matches]
-                                        .filter(m => m.players.team1.includes(player.id) || m.players.team2.includes(player.id))
-                                        .sort((a, b) => b.date - a.date)
-                                        .slice(0, 10)
-                                        .reverse();
-
-                                    const dots = [];
-                                    for (let i = 0; i < 10; i++) {
-                                        const m = myLastMatches[i];
-                                        if (!m) {
-                                            dots.push(<div key={i} className="w-4 h-4 rounded-full bg-white/5 border border-white/5" />);
-                                        } else {
-                                            const isT1 = m.players.team1.includes(player.id);
-                                            const win = (isT1 && m.score.team1 > m.score.team2) || (!isT1 && m.score.team2 > m.score.team1);
-                                            const draw = m.score.team1 === m.score.team2;
-
-                                            dots.push(
-                                                <div key={i} className={cn(
-                                                    "w-4 h-4 rounded-full border-2 shadow-sm transition-transform hover:scale-125 cursor-help",
-                                                    win ? "bg-primary border-primary/50 shadow-primary/20" :
-                                                        draw ? "bg-gray-500 border-gray-400/50 shadow-gray-500/20" :
-                                                            "bg-red-500 border-red-400/50 shadow-red-500/20"
-                                                )} />
-                                            );
-                                        }
-                                    }
-                                    return dots;
-                                })()}
+                    {/* Enhanced Form State Card */}
+                    <button
+                        onClick={() => setShowFormDetail(true)}
+                        className="w-full text-left group"
+                    >
+                        <Card glass className="p-5 border-primary/20 bg-gradient-to-br from-primary/10 to-transparent hover:border-primary/40 transition-all relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Activity className="w-16 h-16" />
                             </div>
-                        </div>
-                    </Card>
+                            <div className="space-y-4 relative">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <label className="text-xs text-primary uppercase font-black tracking-widest flex items-center gap-2">
+                                            <Activity className="w-4 h-4" />
+                                            Estado de Forma
+                                        </label>
+                                        <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest mt-0.5">Últimos 10 partidos</p>
+                                    </div>
+                                    <ChevronRight className="w-5 h-5 text-primary/50 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                                </div>
+
+                                <div className="flex gap-2">
+                                    {(() => {
+                                        const myLastMatches = [...matches]
+                                            .filter(m => m.players.team1.includes(player.id) || m.players.team2.includes(player.id))
+                                            .sort((a, b) => b.date - a.date)
+                                            .slice(0, 10)
+                                            .reverse();
+
+                                        const dots = [];
+                                        for (let i = 0; i < 10; i++) {
+                                            const m = myLastMatches[i];
+                                            if (!m) {
+                                                dots.push(<div key={i} className="w-5 h-5 rounded-full bg-white/5 border border-white/5" />);
+                                            } else {
+                                                const isT1 = m.players.team1.includes(player.id);
+                                                const win = (isT1 && m.score.team1 > m.score.team2) || (!isT1 && m.score.team2 > m.score.team1);
+                                                const draw = m.score.team1 === m.score.team2;
+
+                                                dots.push(
+                                                    <div key={i} className={cn(
+                                                        "w-5 h-5 rounded-full border-2 shadow-sm transition-transform group-hover:scale-110",
+                                                        win ? "bg-primary border-primary/50 shadow-primary/20" :
+                                                            draw ? "bg-gray-500 border-gray-400/50 shadow-gray-500/20" :
+                                                                "bg-red-500 border-red-400/50 shadow-red-500/20"
+                                                    )} />
+                                                );
+                                            }
+                                        }
+                                        return dots;
+                                    })()}
+                                </div>
+
+                                {/* Quick Stats */}
+                                <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+                                    {(() => {
+                                        const myLastMatches = [...matches]
+                                            .filter(m => m.players.team1.includes(player.id) || m.players.team2.includes(player.id))
+                                            .sort((a, b) => b.date - a.date)
+                                            .slice(0, 10);
+
+                                        let wins = 0, draws = 0, losses = 0;
+                                        myLastMatches.forEach(m => {
+                                            const isT1 = m.players.team1.includes(player.id);
+                                            const myScore = isT1 ? m.score.team1 : m.score.team2;
+                                            const oppScore = isT1 ? m.score.team2 : m.score.team1;
+
+                                            if (m.endedBy === 'regular') {
+                                                if (myScore > oppScore) wins++;
+                                                else if (myScore < oppScore) losses++;
+                                                else draws++;
+                                            } else if (m.endedBy === 'penalties') {
+                                                const amIWinner = (isT1 && m.penaltyWinner === 1) || (!isT1 && m.penaltyWinner === 2);
+                                                if (amIWinner) wins++; else losses++;
+                                            } else if (m.endedBy === 'forfeit') {
+                                                const amILoser = (isT1 && m.forfeitLoser === 1) || (!isT1 && m.forfeitLoser === 2);
+                                                if (amILoser) losses++; else wins++;
+                                            }
+                                        });
+
+                                        return (
+                                            <>
+                                                <div className="flex-1 text-center">
+                                                    <span className="text-xl font-black text-green-500 block leading-none">{wins}</span>
+                                                    <span className="text-[8px] text-gray-500 uppercase font-black tracking-widest">Victorias</span>
+                                                </div>
+                                                <div className="w-px h-8 bg-white/10" />
+                                                <div className="flex-1 text-center">
+                                                    <span className="text-xl font-black text-gray-400 block leading-none">{draws}</span>
+                                                    <span className="text-[8px] text-gray-500 uppercase font-black tracking-widest">Empates</span>
+                                                </div>
+                                                <div className="w-px h-8 bg-white/10" />
+                                                <div className="flex-1 text-center">
+                                                    <span className="text-xl font-black text-red-500 block leading-none">{losses}</span>
+                                                    <span className="text-[8px] text-gray-500 uppercase font-black tracking-widest">Derrotas</span>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        </Card>
+                    </button>
 
                     {/* Line 2: Detailed Stats Grid */}
                     <div className="grid grid-cols-3 gap-2">
@@ -465,6 +533,15 @@ export function HomePage({ player }: DashboardProps) {
                     </Card>
                 </Link>
             </section>
+
+            {/* Form State Detail Modal */}
+            {showFormDetail && (
+                <FormStateDetail
+                    player={player}
+                    matches={matches}
+                    onClose={() => setShowFormDetail(false)}
+                />
+            )}
         </div>
     );
 }

@@ -14,7 +14,7 @@ export const Card = ({ className, glass = true, children, ...props }: CardProps)
             className={cn(
                 'rounded-2xl p-6 border transition-colors duration-300',
                 glass
-                    ? 'bg-surface/60 backdrop-blur-md border-white/10 shadow-lg'
+                    ? 'backdrop-blur-[var(--glass-blur)] bg-[var(--glass-bg)] border-[var(--glass-border)] shadow-lg'
                     : 'bg-surface border-white/5',
                 'hover:border-primary/30',
                 className

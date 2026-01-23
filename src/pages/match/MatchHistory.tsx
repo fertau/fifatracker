@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2, Calendar, Trophy, Edit2, AlertTriangle, X, Save, Clock, Users } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, Trash2, Calendar, Trophy, Edit2, AlertTriangle, X, Save, Clock, Users, TrendingUp, Target } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { cn } from '../../lib/utils';
 import type { Match, Player, AuditLogEntry } from '../../types';
 import { useAdvancedStats } from '../../hooks/useAdvancedStats';
@@ -15,6 +16,7 @@ interface MatchHistoryProps {
 
 export function MatchHistory({ currentUser }: MatchHistoryProps) {
     const navigate = useNavigate();
+    const location = useLocation();
     const { matches, deleteMatch, getPlayer, updateMatch } = useData();
     const { tournaments } = useTournaments();
     const stats = useAdvancedStats(currentUser.id);
@@ -24,6 +26,7 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
 
     // View States
     const [activeTab, setActiveTab] = useState<'total' | 'h2h'>('total');
+    const [resultFilter, setResultFilter] = useState<'all' | 'win' | 'draw' | 'loss'>('all');
 
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | '1v1' | '2v2'>('all');
@@ -32,6 +35,16 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
     const [editScore1, setEditScore1] = useState(0);
     const [editScore2, setEditScore2] = useState(0);
     const [editDate, setEditDate] = useState('');
+
+    // Handle navigation state for result filtering
+    useEffect(() => {
+        const state = location.state as { filterByResult?: 'win' | 'draw' | 'loss' };
+        if (state?.filterByResult) {
+            setResultFilter(state.filterByResult);
+            // Clear the state to avoid re-applying on navigation
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // 1. Calculate Player Ranking (matches played WITH or AGAINST current user)
     const playersRankedByMatches = useMemo(() => {
@@ -75,8 +88,90 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
             result = result.filter(m => m.type === matchTypeFilter);
         }
 
+        // Filter by Result
+        if (resultFilter !== 'all') {
+            result = result.filter(m => {
+                const isT1 = m.players.team1.includes(currentUser.id);
+                const myScore = isT1 ? m.score.team1 : m.score.team2;
+                const oppScore = isT1 ? m.score.team2 : m.score.team1;
+
+                let matchResult: 'win' | 'draw' | 'loss' = 'draw';
+                if (m.endedBy === 'regular') {
+                    if (myScore > oppScore) matchResult = 'win';
+                    else if (myScore < oppScore) matchResult = 'loss';
+                } else if (m.endedBy === 'penalties') {
+                    const amIWinner = (isT1 && m.penaltyWinner === 1) || (!isT1 && m.penaltyWinner === 2);
+                    matchResult = amIWinner ? 'win' : 'loss';
+                } else if (m.endedBy === 'forfeit') {
+                    const amILoser = (isT1 && m.forfeitLoser === 1) || (!isT1 && m.forfeitLoser === 2);
+                    matchResult = amILoser ? 'loss' : 'win';
+                }
+
+                return matchResult === resultFilter;
+            });
+        }
+
         return result;
-    }, [matches, activeTab, selectedPlayerId, matchTypeFilter, currentUser.id]);
+    }, [matches, activeTab, selectedPlayerId, matchTypeFilter, resultFilter, currentUser.id]);
+
+    // 3. Calculate H2H Stats
+    const h2hStats = useMemo(() => {
+        if (!selectedPlayerId) return null;
+
+        const h2hMatches = matches.filter(m => {
+            const allPlayers = [...m.players.team1, ...m.players.team2];
+            return allPlayers.includes(currentUser.id) && allPlayers.includes(selectedPlayerId);
+        });
+
+        let myWins = 0, myLosses = 0, draws = 0;
+        let myGoals = 0, oppGoals = 0;
+        let currentStreak = { type: null as 'win' | 'loss' | null, count: 0 };
+
+        h2hMatches.sort((a, b) => b.date - a.date).forEach((m, idx) => {
+            const isT1 = m.players.team1.includes(currentUser.id);
+            const myScore = isT1 ? m.score.team1 : m.score.team2;
+            const oppScore = isT1 ? m.score.team2 : m.score.team1;
+
+            myGoals += myScore;
+            oppGoals += oppScore;
+
+            let result: 'win' | 'draw' | 'loss' = 'draw';
+            if (m.endedBy === 'regular') {
+                if (myScore > oppScore) result = 'win';
+                else if (myScore < oppScore) result = 'loss';
+            } else if (m.endedBy === 'penalties') {
+                const amIWinner = (isT1 && m.penaltyWinner === 1) || (!isT1 && m.penaltyWinner === 2);
+                result = amIWinner ? 'win' : 'loss';
+            } else if (m.endedBy === 'forfeit') {
+                const amILoser = (isT1 && m.forfeitLoser === 1) || (!isT1 && m.forfeitLoser === 2);
+                result = amILoser ? 'loss' : 'win';
+            }
+
+            if (result === 'win') myWins++;
+            else if (result === 'loss') myLosses++;
+            else draws++;
+
+            // Calculate streak (most recent matches)
+            if (idx === 0) {
+                if (result !== 'draw') {
+                    currentStreak = { type: result, count: 1 };
+                }
+            } else if (currentStreak.type && currentStreak.type === result && result !== 'draw') {
+                currentStreak.count++;
+            }
+        });
+
+        return {
+            totalMatches: h2hMatches.length,
+            myWins,
+            myLosses,
+            draws,
+            myGoals,
+            oppGoals,
+            goalDiff: myGoals - oppGoals,
+            currentStreak
+        };
+    }, [matches, currentUser.id, selectedPlayerId]);
 
     const handleDelete = (id: string) => {
         if (confirm('¿Estás seguro de eliminar este partido? Se revertirán las estadísticas.')) {
@@ -289,24 +384,104 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
                 </div>
             )}
 
-            {/* Match Type Filter */}
-            <div className="flex gap-2 p-1 bg-white/[0.02] rounded-xl border border-white/5">
-                {[
-                    { id: 'all', label: 'Todos' },
-                    { id: '1v1', label: '1 vs 1' },
-                    { id: '2v2', label: '2 vs 2' }
-                ].map((f) => (
-                    <button
-                        key={f.id}
-                        onClick={() => setMatchTypeFilter(f.id as any)}
-                        className={cn(
-                            "flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
-                            matchTypeFilter === f.id ? "bg-white/10 text-white" : "text-gray-600 hover:text-gray-400"
-                        )}
-                    >
-                        {f.label}
-                    </button>
-                ))}
+            {/* H2H Summary Card */}
+            {activeTab === 'h2h' && selectedPlayerId && h2hStats && (
+                <Card glass className="p-5 border-accent/20 bg-gradient-to-br from-accent/10 to-transparent animate-in fade-in slide-in-from-top-2">
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center border border-accent/30">
+                                    <Target className="w-6 h-6 text-accent" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-accent">Cara a Cara</h3>
+                                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Resumen del enfrentamiento</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-2xl font-black text-white">{h2hStats.totalMatches}</p>
+                                <p className="text-[8px] text-gray-500 uppercase font-black tracking-widest">Partidos</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            <div className="text-center p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                                <p className="text-2xl font-black text-green-500">{h2hStats.myWins}</p>
+                                <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">Victorias</p>
+                            </div>
+                            <div className="text-center p-3 bg-gray-500/10 rounded-xl border border-gray-500/20">
+                                <p className="text-2xl font-black text-gray-400">{h2hStats.draws}</p>
+                                <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">Empates</p>
+                            </div>
+                            <div className="text-center p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                                <p className="text-2xl font-black text-red-500">{h2hStats.myLosses}</p>
+                                <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">Derrotas</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                            <div>
+                                <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Diferencia de Goles</p>
+                                <p className={cn(
+                                    "text-xl font-black",
+                                    h2hStats.goalDiff > 0 ? "text-green-500" : h2hStats.goalDiff < 0 ? "text-red-500" : "text-gray-400"
+                                )}>
+                                    {h2hStats.goalDiff > 0 ? '+' : ''}{h2hStats.goalDiff}
+                                </p>
+                            </div>
+                            {h2hStats.currentStreak.type && h2hStats.currentStreak.count > 1 && (
+                                <div className="text-right">
+                                    <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest">Racha Actual</p>
+                                    <p className={cn(
+                                        "text-xl font-black flex items-center gap-1",
+                                        h2hStats.currentStreak.type === 'win' ? "text-green-500" : "text-red-500"
+                                    )}>
+                                        {h2hStats.currentStreak.count}
+                                        <TrendingUp className="w-4 h-4" />
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </Card>
+            )}
+
+            {/* Filters Row */}
+            <div className="space-y-2">
+                {/* Match Type Filter */}
+                <div className="flex gap-2 p-1 bg-white/[0.02] rounded-xl border border-white/5">
+                    {[
+                        { id: 'all', label: 'Todos' },
+                        { id: '1v1', label: '1 vs 1' },
+                        { id: '2v2', label: '2 vs 2' }
+                    ].map((f) => (
+                        <button
+                            key={f.id}
+                            onClick={() => setMatchTypeFilter(f.id as any)}
+                            className={cn(
+                                "flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                                matchTypeFilter === f.id ? "bg-white/10 text-white" : "text-gray-600 hover:text-gray-400"
+                            )}
+                        >
+                            {f.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Result Filter */}
+                {resultFilter !== 'all' && (
+                    <div className="flex items-center justify-between p-2 bg-primary/10 rounded-xl border border-primary/20">
+                        <p className="text-[9px] text-primary uppercase font-black tracking-widest">
+                            Filtrando por: {resultFilter === 'win' ? 'Victorias' : resultFilter === 'draw' ? 'Empates' : 'Derrotas'}
+                        </p>
+                        <button
+                            onClick={() => setResultFilter('all')}
+                            className="text-[9px] text-gray-400 hover:text-white uppercase font-black tracking-widest"
+                        >
+                            Limpiar
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Matches List */}
@@ -324,12 +499,12 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
 
                     return (
                         <Card key={match.id} glass={false} className="relative overflow-hidden group border-white/5 bg-white/[0.01]">
-                            <div className="p-4 grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
+                            <div className="p-3 grid grid-cols-[1fr,auto,1fr] gap-3 items-center">
                                 {/* Team 1 */}
-                                <div className="text-right space-y-1">
-                                    <div className="flex flex-col items-end gap-1">
+                                <div className="text-right space-y-0.5">
+                                    <div className="flex flex-col items-end gap-0.5">
                                         {team1Players.map(p => (
-                                            <span key={p?.id} className={cn("font-bold text-sm block truncate max-w-[80px]", score1 > score2 ? "text-primary" : "text-gray-400")}>
+                                            <span key={p?.id} className={cn("font-bold text-xs block truncate max-w-[70px]", score1 > score2 ? "text-primary" : "text-gray-400")}>
                                                 {p?.name}
                                             </span>
                                         ))}
@@ -338,22 +513,22 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
 
                                 {/* Score & Badge */}
                                 <div className="flex flex-col items-center">
-                                    <div className="bg-black/50 px-4 py-1.5 rounded-xl border border-white/10 font-mono font-bold text-lg tracking-widest relative shadow-inner">
+                                    <div className="bg-black/50 px-3 py-1 rounded-xl border border-white/10 font-mono font-bold text-base tracking-widest relative shadow-inner">
                                         <span className={score1 > score2 ? "text-primary" : "text-white"}>{score1}</span>
-                                        <span className="mx-2 text-white/20">-</span>
+                                        <span className="mx-1.5 text-white/20">-</span>
                                         <span className={score2 > score1 ? "text-accent" : "text-white"}>{score2}</span>
 
                                         {match.edits && match.edits.length > 0 && (
                                             <button
                                                 onClick={() => setShowAuditFor(showAuditFor === match.id ? null : match.id)}
-                                                className="absolute -top-3 -right-3 bg-yellow-500 text-black p-1 rounded-full hover:scale-110 transition-transform shadow-lg z-20 border-2 border-background"
+                                                className="absolute -top-2 -right-2 bg-yellow-500 text-black p-0.5 rounded-full hover:scale-110 transition-transform shadow-lg z-20 border-2 border-background"
                                             >
-                                                <AlertTriangle className="w-3 h-3" />
+                                                <AlertTriangle className="w-2.5 h-2.5" />
                                             </button>
                                         )}
                                     </div>
                                     <span className={cn(
-                                        "text-[9px] mt-2 uppercase font-black tracking-widest px-2 py-0.5 rounded border leading-none bg-white/5",
+                                        "text-[8px] mt-1.5 uppercase font-black tracking-widest px-1.5 py-0.5 rounded border leading-none bg-white/5",
                                         match.type === '1v1' ? "text-blue-400 border-blue-400/20" : "text-purple-400 border-purple-400/20"
                                     )}>
                                         {match.type} {resultInfo}
@@ -361,10 +536,10 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
                                 </div>
 
                                 {/* Team 2 */}
-                                <div className="text-left space-y-1">
-                                    <div className="flex flex-col items-start gap-1">
+                                <div className="text-left space-y-0.5">
+                                    <div className="flex flex-col items-start gap-0.5">
                                         {team2Players.map(p => (
-                                            <span key={p?.id} className={cn("font-bold text-sm block truncate max-w-[80px]", score2 > score1 ? "text-accent" : "text-gray-400")}>
+                                            <span key={p?.id} className={cn("font-bold text-xs block truncate max-w-[70px]", score2 > score1 ? "text-accent" : "text-gray-400")}>
                                                 {p?.name}
                                             </span>
                                         ))}
@@ -391,24 +566,24 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
                             )}
 
                             {/* Metadata Footer */}
-                            <div className="bg-white/[0.02] px-4 py-2.5 flex justify-between items-center text-[10px] text-gray-500 border-t border-white/5">
-                                <span className="flex items-center gap-1.5 opacity-60">
-                                    <Calendar className="w-3.5 h-3.5 text-primary" />
+                            <div className="bg-white/[0.02] px-3 py-2 flex justify-between items-center text-[9px] text-gray-500 border-t border-white/5">
+                                <span className="flex items-center gap-1 opacity-60">
+                                    <Calendar className="w-3 h-3 text-primary" />
                                     {new Date(match.date).toLocaleDateString()} • {new Date(match.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
 
-                                <div className="flex gap-4">
+                                <div className="flex gap-3">
                                     <button
                                         onClick={() => startEdit(match)}
-                                        className="flex items-center gap-1.5 text-primary/80 hover:text-primary transition-colors font-bold uppercase tracking-widest"
+                                        className="flex items-center gap-1 text-primary/80 hover:text-primary transition-colors font-bold uppercase tracking-widest"
                                     >
-                                        <Edit2 className="w-3 h-3" /> Editar
+                                        <Edit2 className="w-2.5 h-2.5" /> Editar
                                     </button>
                                     <button
                                         onClick={() => handleDelete(match.id)}
-                                        className="flex items-center gap-1.5 text-red-500/60 hover:text-red-500 transition-colors font-bold uppercase tracking-widest"
+                                        className="flex items-center gap-1 text-red-500/60 hover:text-red-500 transition-colors font-bold uppercase tracking-widest"
                                     >
-                                        <Trash2 className="w-3 h-3" /> Borrar
+                                        <Trash2 className="w-2.5 h-2.5" /> Borrar
                                     </button>
                                 </div>
                             </div>

@@ -22,9 +22,11 @@ import { AnimatePresence } from 'framer-motion';
 import type { Player } from './types';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
+import { useRememberedAccounts } from './hooks/useRememberedAccounts';
 
 function MainApp() {
   const { players, loading } = useData();
+  const { rememberAccount } = useRememberedAccounts();
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
@@ -53,18 +55,20 @@ function MainApp() {
     }
   }, [players, loading, currentPlayer]);
 
-  // Save to persistence
+  // Save to persistence and remember account on this device
   useEffect(() => {
     if (loading) return;
     if (currentPlayer) {
       localStorage.setItem('fifa_tracker_current_player_id', currentPlayer.id);
+      // Remember this account on this device for quick login
+      rememberAccount(currentPlayer.id);
       if (currentPlayer.name.toLowerCase() === 'fertau') {
         localStorage.setItem('is_fertau_admin', 'true');
       }
     } else {
       localStorage.removeItem('fifa_tracker_current_player_id');
     }
-  }, [currentPlayer, loading]);
+  }, [currentPlayer, loading, rememberAccount]);
 
   // Keep current player synced with DB
   useEffect(() => {

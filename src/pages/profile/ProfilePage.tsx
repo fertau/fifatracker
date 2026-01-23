@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, LogOut, ArrowLeft, User, Lock, X, EyeOff, Eye, Shield } from 'lucide-react';
+import { Trash2, LogOut, ArrowLeft, User, Lock, X, Shield, Eye, EyeOff } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 
 import { cn } from '../../lib/utils';
@@ -41,13 +41,7 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
         }
     };
 
-    const handleTogglePin = async () => {
-        try {
-            await updatePlayer(player.id, { isPinned: !player.isPinned });
-        } catch (error) {
-            console.error('Error toggling pin:', error);
-        }
-    };
+
 
     const handlePinChange = async () => {
         setPinError('');
@@ -130,7 +124,9 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                     <div className="grid grid-cols-4 gap-3">
                         {ACHIEVEMENTS.map(achievement => {
                             const isUnlocked = unlockedIds.includes(achievement.id);
-                            const isRare = achievement.rarity === 'rare' || achievement.rarity === 'epic' || achievement.rarity === 'legendary';
+                            const isRare = achievement.rarity === 'rare';
+                            const isEpic = achievement.rarity === 'epic';
+                            const isLegendary = achievement.rarity === 'legendary';
 
                             return (
                                 <div
@@ -138,27 +134,24 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                                     className="relative group flex flex-col items-center"
                                 >
                                     <div className={cn(
-                                        "w-16 h-16 flex items-center justify-center text-3xl transition-all duration-500 panini-sticker relative overflow-hidden ring-4 shadow-[3px_3px_10px_rgba(0,0,0,0.4)]",
+                                        "w-16 h-16 flex items-center justify-center text-3xl transition-all duration-300 rounded-xl relative overflow-hidden shadow-lg",
                                         isUnlocked
-                                            ? `bg-gradient-to-br ${achievement.color} ring-white scale-100 group-hover:scale-110 group-hover:-rotate-2`
-                                            : "bg-white/5 ring-white/10 opacity-30 grayscale scale-95",
-                                        isUnlocked && isRare && "holographic-foil"
+                                            ? `bg-gradient-to-br ${achievement.color} scale-100 group-hover:scale-110`
+                                            : "bg-white/5 opacity-30 grayscale scale-95",
+                                        isUnlocked && isLegendary && "ring-2 ring-yellow-500/50 ring-offset-2 ring-offset-background",
+                                        isUnlocked && isEpic && "ring-2 ring-purple-500/50 ring-offset-2 ring-offset-background",
+                                        isUnlocked && isRare && "ring-2 ring-blue-400/50 ring-offset-2 ring-offset-background"
                                     )}>
-                                        {/* Sticker Shine Texture */}
-                                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.8),transparent_50%)]" />
+                                        {/* Subtle gradient overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
 
                                         {/* Icon */}
                                         <span className={cn(
-                                            "relative z-10 drop-shadow-lg transition-transform duration-500",
+                                            "relative z-10 drop-shadow-lg transition-transform duration-300",
                                             isUnlocked ? "scale-100" : "scale-75"
                                         )}>
                                             {achievement.icon}
                                         </span>
-
-                                        {/* Luxury Legend Border */}
-                                        {isUnlocked && achievement.rarity === 'legendary' && (
-                                            <div className="absolute inset-0 ring-inset ring-2 ring-yellow-400/50 animate-pulse" />
-                                        )}
                                     </div>
 
                                     {/* Tooltip */}
@@ -201,22 +194,41 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                     </Button>
                 </div>
 
-                {/* Visibility Section */}
+                {/* Friend Search Visibility Section */}
                 <div className="pt-6 border-t border-white/5 space-y-3">
                     <div className="flex items-center gap-2 px-1">
-                        {player.isPinned !== false ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-gray-500" />}
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Visibilidad en Inicio</h3>
+                        {player.visibility === 'public' ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-gray-500" />}
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Visibilidad en Búsqueda de Amigos</h3>
                     </div>
-                    <Button
-                        variant={player.isPinned !== false ? 'primary' : 'secondary'}
-                        className="w-full rounded-2xl py-4 font-bold text-xs"
-                        onClick={handleTogglePin}
-                    >
-                        {player.isPinned !== false ? 'Visible en Inicio' : 'Oculto (Solo Búsqueda)'}
-                    </Button>
-                    <p className="text-[9px] text-gray-500 italic px-2">
-                        Si lo ocultas, tu perfil no aparecerá en la grilla principal de selección.
-                    </p>
+                    <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex gap-1">
+                        <button
+                            onClick={() => updatePlayer(player.id, { visibility: 'public' })}
+                            className={cn(
+                                "flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                                player.visibility === 'public' ? "bg-primary text-black shadow-lg shadow-primary/20" : "text-gray-500 hover:text-gray-300"
+                            )}
+                        >
+                            <Eye className="w-3 h-3 mx-auto mb-1" />
+                            Público
+                        </button>
+                        <button
+                            onClick={() => updatePlayer(player.id, { visibility: 'private' })}
+                            className={cn(
+                                "flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                                player.visibility === 'private' ? "bg-gray-600 text-white shadow-lg shadow-gray-600/20" : "text-gray-500 hover:text-gray-300"
+                            )}
+                        >
+                            <EyeOff className="w-3 h-3 mx-auto mb-1" />
+                            Privado
+                        </button>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                        <p className="text-[9px] text-gray-400 italic leading-relaxed">
+                            {player.visibility === 'public'
+                                ? "Tu perfil aparece en el listado global de búsqueda de amigos. Cualquiera puede encontrarte y enviarte solicitudes."
+                                : "Tu perfil está oculto del listado global. Solo pueden agregarte si buscan tu nombre exacto o escanean tu código QR."}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Admin Access (Fertau only) */}

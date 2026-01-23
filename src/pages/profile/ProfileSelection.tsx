@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Lock } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
+import { useRememberedAccounts } from '../../hooks/useRememberedAccounts';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { AvatarSelector } from '../../components/profile/AvatarSelector';
@@ -12,7 +13,8 @@ interface ProfileSelectionProps {
 }
 
 export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
-    const { players, loading, createPlayer, deletePlayer, updatePlayer } = usePlayers();
+    const { players, loading, createPlayer, updatePlayer } = usePlayers();
+    const { rememberedAccountIds, isAccountRemembered, forgetAccount } = useRememberedAccounts();
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
     const [newPin, setNewPin] = useState('');
@@ -201,7 +203,7 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                             <h1 className="text-4xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent font-heading tracking-tighter italic uppercase">
                                 ¿Quién eres?
                             </h1>
-                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Selecciona tu perfil para entrar</p>
+                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Selecciona tu cuenta para entrar</p>
                         </div>
 
                         <div className="space-y-4">
@@ -219,8 +221,10 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 {players
                                     .filter(p => {
                                         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-                                        if (searchQuery.trim() === '') return p.isPinned !== false;
-                                        return matchesSearch;
+                                        // If searching, show all matching players
+                                        if (searchQuery.trim() !== '') return matchesSearch;
+                                        // Otherwise, only show remembered accounts (or all if none remembered yet)
+                                        return isAccountRemembered(p.id) || rememberedAccountIds.length === 0;
                                     })
                                     .map((player) => (
                                         <Card
@@ -231,17 +235,19 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                         >
-                                            {localStorage.getItem('is_fertau_admin') === 'true' && player.name.toLowerCase() !== 'fertau' && (
+                                            {/* Remove from device button - only show for remembered accounts */}
+                                            {isAccountRemembered(player.id) && rememberedAccountIds.length > 0 && (
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (confirm(`¿Eliminar a ${player.name}?`)) {
-                                                            deletePlayer(player.id);
+                                                        if (confirm(`¿Olvidar cuenta de ${player.name} en este dispositivo?\n\nEsto solo afecta este dispositivo. La cuenta no se eliminará.`)) {
+                                                            forgetAccount(player.id);
                                                         }
                                                     }}
-                                                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                                                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 hover:text-white"
+                                                    title="Olvidar cuenta en este dispositivo"
                                                 >
-                                                    <Trash2 className="w-4 h-4" />
+                                                    <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
                                             )}
 
