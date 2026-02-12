@@ -91,19 +91,13 @@ export function useTournaments() {
             const p1 = paddedParticipants[i];
             const p2 = paddedParticipants[total - 1 - i];
 
-            // If both are BYE (Should not happen if N > Total/2), but hypothetically:
-            // If we have 2 players in 8 slots?? 2 players, 6 BYEs.
-            // [P1, P2, B, B, B, B, B, B]
-            // 0-7: P1 vs B
-            // 1-6: P2 vs B
-            // 2-5: B vs B
-            // 3-4: B vs B
-            // We need to handle double BYE as "Null match"? Or just let it resolve.
+            // Guard: avoid BYE vs BYE slots (keep empty match in rare edge cases)
+            if (p1 === 'BYE' && p2 === 'BYE') {
+                fixtures.push({ team1: [], team2: [] });
+                continue;
+            }
 
-            fixtures.push({
-                team1: [p1],
-                team2: [p2]
-            });
+            fixtures.push({ team1: [p1], team2: [p2] });
         }
 
         // 2. Generate Future Rounds (Empty slots)

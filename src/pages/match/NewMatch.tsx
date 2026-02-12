@@ -67,7 +67,19 @@ export function NewMatch() {
         return team1.length > 0 && team2.length > 0;
     };
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleSave = async () => {
+        if (isSaving) return;
+        if (endedBy === 'penalties' && !penaltyWinner) {
+            alert('Debes seleccionar el ganador por penales.');
+            return;
+        }
+        if (endedBy === 'forfeit' && !forfeitLoser) {
+            alert('Debes seleccionar quién abandonó el partido.');
+            return;
+        }
+        setIsSaving(true);
         try {
             if (saveMatch) {
                 await saveMatch(
@@ -89,6 +101,8 @@ export function NewMatch() {
         } catch (error) {
             console.error('Error saving match:', error);
             alert('Error al guardar el partido. Verifica tu conexión e intenta de nuevo.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -303,8 +317,8 @@ export function NewMatch() {
 
                     <div className="flex gap-4">
                         <Button variant="ghost" className="flex-1" onClick={() => setStep('setup')}>Back</Button>
-                        <Button className="flex-[2]" glow size="lg" onClick={handleSave}>
-                            <Trophy className="w-5 h-5" /> FINALIZAR PARTIDO
+                        <Button className="flex-[2]" glow size="lg" onClick={handleSave} disabled={isSaving}>
+                            <Trophy className="w-5 h-5" /> {isSaving ? 'GUARDANDO...' : 'FINALIZAR PARTIDO'}
                         </Button>
                     </div>
                 </motion.div>

@@ -116,3 +116,23 @@ Diseñado para sentirse como una aplicación nativa y ser accesible globalmente.
 *   **Splash Screen**: Animación de carga de marca.
 *   **Branding**: Interfaz "vibrant/glassmorphism" de alta gama optimizada para móviles.
 
+---
+
+## 8. Checklist de pruebas funcionales (manual)
+### Partidos
+*   Guardar partido con penales exige ganador.
+*   Guardar partido por abandono exige definir perdedor.
+*   Partidos guardados actualizan estadísticas y ranking.
+
+### Sesiones
+*   Sesión sin host: los jugadores seleccionados aparecen como disponibles.
+*   Cambiar jugadores de sesión actualiza la lista de disponibles.
+
+### Torneos
+*   Generar fixture y registrar resultados.
+*   Auto-finalizado al completar todos los partidos.
+*   Knockout con BYE no muestra cruces BYE vs BYE.
+
+### Social / Perfiles
+*   Búsqueda de amigos por nombre exacto.
+*   Selección de perfil por nombre exacto.

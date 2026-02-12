@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Trophy, Users, ArrowLeft, Shuffle, Sparkles, Trash2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -25,7 +25,7 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
     const { players } = usePlayers();
 
     const [showDraw, setShowDraw] = useState(false);
-    const [autoFinishPrompted, setAutoFinishPrompted] = useState(false);
+    const autoFinishPromptedRef = useRef(false);
 
     // Get tournament from navigation state (if just created) or from tournaments array
     const tournamentFromState = location.state?.tournament as Tournament | undefined;
@@ -38,30 +38,6 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
     // Persisted fixtures OR generate default if not yet saved (but we only generate default if we want to show 'preview', 
     // actually requirement is NOT to show preview. But we need empty array if null.)
     const fixtures = tournament?.fixtures || [];
-
-    // Auto-finalize detection
-    useState(() => {
-        if (tournament?.status === 'active' && fixtures.length > 0 && !autoFinishPrompted) {
-            const allPlayed = fixtures.every((_, idx) => tournamentMatches.some(m => m.tournamentFixtureSlot === idx));
-            if (allPlayed) {
-                setAutoFinishPrompted(true);
-                setTimeout(() => {
-                    handleFinish();
-                }, 1000);
-            }
-        }
-    });
-
-    if (!tournament) {
-        return (
-            <div className="text-center p-10 space-y-4">
-                <p className="text-gray-500">Torneo no encontrado</p>
-                <Link to="/">
-                    <Button variant="ghost">Volver al inicio</Button>
-                </Link>
-            </div>
-        );
-    }
 
     // Helper to get player details
     const getPlayer = (id: string) => players.find(p => p.id === id);
@@ -91,7 +67,7 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
         }
     };
 
-    const handleFinish = async () => {
+    const handleFinish = useCallback(async () => {
         if (!tournament) return;
 
         let winnerId: string | undefined;
@@ -128,7 +104,31 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
         } catch (error) {
             console.error('Error finishing tournament:', error);
         }
-    };
+    }, [tournament, standings, tournamentMatches, updateTournament, getPlayer]);
+
+    // Auto-finalize detection
+    useEffect(() => {
+        if (tournament?.status === 'active' && fixtures.length > 0 && !autoFinishPromptedRef.current) {
+            const allPlayed = fixtures.every((_, idx) => tournamentMatches.some(m => m.tournamentFixtureSlot === idx));
+            if (allPlayed) {
+                autoFinishPromptedRef.current = true;
+                setTimeout(() => {
+                    handleFinish();
+                }, 1000);
+            }
+        }
+    }, [tournament?.status, fixtures.length, tournamentMatches, handleFinish]);
+
+    if (!tournament) {
+        return (
+            <div className="text-center p-10 space-y-4">
+                <p className="text-gray-500">Torneo no encontrado</p>
+                <Link to="/">
+                    <Button variant="ghost">Volver al inicio</Button>
+                </Link>
+            </div>
+        );
+    }
 
     const handleMoveFixture = async (index: number, direction: 'up' | 'down') => {
         if (!tournament?.fixtures) return;

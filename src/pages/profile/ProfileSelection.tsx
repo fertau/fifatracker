@@ -216,13 +216,19 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-primary transition-all font-bold uppercase tracking-widest placeholder:text-gray-700"
                                 />
                             </div>
+                            {searchQuery.trim() !== '' && (
+                                <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest px-1">
+                                    Búsqueda exacta por nombre.
+                                </p>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4">
                                 {players
                                     .filter(p => {
-                                        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-                                        // If searching, show all matching players
-                                        if (searchQuery.trim() !== '') return matchesSearch;
+                                        const query = searchQuery.trim().toLowerCase();
+                                        const matchesSearch = query !== '' && p.name.toLowerCase() === query;
+                                        // If searching, only exact matches
+                                        if (query !== '') return matchesSearch;
                                         // Otherwise, only show remembered accounts (or all if none remembered yet)
                                         return isAccountRemembered(p.id) || rememberedAccountIds.length === 0;
                                     })

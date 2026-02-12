@@ -39,13 +39,20 @@ export function FriendsList({ currentUser }: FriendsListProps) {
         (currentUser.sentRequests || []).includes(p.id)
     );
 
-    const suggestedFriends = players.filter(p =>
-        p.id !== currentUser.id &&
-        !(currentUser.friends || []).includes(p.id) &&
-        !(currentUser.friendRequests || []).includes(p.id) &&
-        !(currentUser.sentRequests || []).includes(p.id) &&
-        (searchQuery.trim() === '' ? p.visibility !== 'private' : p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const suggestedFriends = players.filter(p => {
+        if (p.id === currentUser.id) return false;
+        if ((currentUser.friends || []).includes(p.id)) return false;
+        if ((currentUser.friendRequests || []).includes(p.id)) return false;
+        if ((currentUser.sentRequests || []).includes(p.id)) return false;
+
+        const query = searchQuery.trim().toLowerCase();
+        if (query === '') {
+            return p.visibility !== 'private';
+        }
+
+        // Exact match when searching
+        return p.name.toLowerCase() === query;
+    });
 
     const handleSendRequest = async (toId: string) => {
         try {
@@ -282,6 +289,11 @@ export function FriendsList({ currentUser }: FriendsListProps) {
                             autoFocus
                         />
                     </div>
+                    {searchQuery.trim() !== '' && (
+                        <p className="text-[9px] text-gray-600 uppercase font-black tracking-widest px-1">
+                            Búsqueda exacta por nombre.
+                        </p>
+                    )}
 
                     <div className="grid grid-cols-1 gap-3">
                         {suggestedFriends.length > 0 ? suggestedFriends.map(player => (
