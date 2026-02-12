@@ -288,7 +288,10 @@ export function calculateUnlockedAchievements(player: Player, matches: Match[]):
     if (player.derivedStats?.goalsScored && player.derivedStats.goalsScored >= 100) unlocked.push('centurion');
 
     // Tournament King: Win a tournament
-    if (player.derivedStats && (player.derivedStats as any).tournamentsWon > 0) unlocked.push('tournament-king');
+    if (player.derivedStats && 'tournamentsWon' in player.derivedStats) {
+        const stats = player.derivedStats as PlayerStats & { tournamentsWon?: number };
+        if ((stats.tournamentsWon || 0) > 0) unlocked.push('tournament-king');
+    }
 
     // Shark: Beat #1 player (would need ranking data)
     // This would require additional logic to track rankings

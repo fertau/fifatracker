@@ -121,6 +121,7 @@ export function FriendsList({ currentUser }: FriendsListProps) {
             alert(`¡Solicitud enviada a ${friend.name}!`);
             setShowQR(false);
         } catch (error) {
+            console.error('Error al enviar la solicitud', error);
             alert('Error al enviar la solicitud');
         }
     };

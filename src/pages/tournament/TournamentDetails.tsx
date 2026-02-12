@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Trophy, Users, ArrowLeft, Shuffle, Sparkles, Trash2, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -32,15 +32,15 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
     const tournamentFromFirebase = tournaments.find(t => t.id === id);
     const tournament = tournamentFromState || tournamentFromFirebase;
 
-    const standings = id ? calculateLeagueStandings(id) : [];
-    const tournamentMatches = id ? getTournamentMatches(id) : [];
+    const standings = useMemo(() => (id ? calculateLeagueStandings(id) : []), [id, calculateLeagueStandings]);
+    const tournamentMatches = useMemo(() => (id ? getTournamentMatches(id) : []), [id, getTournamentMatches]);
 
     // Persisted fixtures OR generate default if not yet saved (but we only generate default if we want to show 'preview', 
     // actually requirement is NOT to show preview. But we need empty array if null.)
-    const fixtures = tournament?.fixtures || [];
+    const fixtures = useMemo(() => tournament?.fixtures || [], [tournament?.fixtures]);
 
     // Helper to get player details
-    const getPlayer = (id: string) => players.find(p => p.id === id);
+    const getPlayer = useCallback((id: string) => players.find(p => p.id === id), [players]);
 
     const handleDrawConfirm = async (generatedFixtures: { team1: string[], team2: string[] }[]) => {
         if (!tournament) return;
@@ -117,7 +117,7 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
                 }, 1000);
             }
         }
-    }, [tournament?.status, fixtures.length, tournamentMatches, handleFinish]);
+    }, [tournament?.status, fixtures, tournamentMatches, handleFinish]);
 
     if (!tournament) {
         return (

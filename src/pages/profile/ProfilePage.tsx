@@ -35,9 +35,10 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                 await deletePlayer(player.id);
                 onLogout();
                 navigate('/');
-            } catch (error) {
-                alert('Error al eliminar el jugador.');
-            }
+        } catch (error) {
+            console.error('Error al eliminar el jugador', error);
+            alert('Error al eliminar el jugador.');
+        }
         }
     };
 

@@ -1,15 +1,20 @@
 import { usePlayers } from './usePlayers';
 import { useData } from '../context/DataContext';
 import { calculatePlayerScore } from '../lib/utils';
-import type { PlayerStats } from '../types';
+import type { PlayerStats, Match, Player } from '../types';
 
 export type RankingMode = '1v1' | '2v2' | 'global';
+
+export interface RankedPlayer extends Player {
+    derivedStats: PlayerStats;
+    score: number;
+}
 
 export function useLeaderboard(mode: RankingMode = '1v1') {
     const { players } = usePlayers();
     const { matches } = useData();
 
-    const calculateStats = (playerMatches: any[], playerId: string): PlayerStats => {
+    const calculateStats = (playerMatches: Match[], playerId: string): PlayerStats => {
         let wins = 0;
         let draws = 0;
         let losses = 0;
@@ -47,7 +52,7 @@ export function useLeaderboard(mode: RankingMode = '1v1') {
         };
     };
 
-    const getRankedPool = (allMatches: any[], filterMode: RankingMode, filterPeriod: 'all' | 'recent') => {
+    const getRankedPool = (allMatches: Match[], filterMode: RankingMode, filterPeriod: 'all' | 'recent'): RankedPlayer[] => {
         let filteredMatches = [...allMatches];
 
         // Filter by Period
@@ -81,4 +86,3 @@ export function useLeaderboard(mode: RankingMode = '1v1') {
 
     return { rankedPlayers, recentRankedPlayers };
 }
-

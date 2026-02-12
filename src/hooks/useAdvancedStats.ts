@@ -29,8 +29,8 @@ export function useAdvancedStats(playerId: string) {
         const rivalStats = new Map<string, { wins: number; losses: number }>();
         const partnerStats = new Map<string, { wins: number; losses: number }>();
         let currentStreak: { type: 'win' | 'loss' | null; count: number } = { type: null, count: 0 };
-        let soloStats = { wins: 0, losses: 0, draws: 0 };
-        let teamStats = { wins: 0, losses: 0, draws: 0 };
+        const soloStats = { wins: 0, losses: 0, draws: 0 };
+        const teamStats = { wins: 0, losses: 0, draws: 0 };
 
         let matchesPlayed = 0;
         let wins = 0;

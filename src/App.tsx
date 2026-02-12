@@ -46,6 +46,7 @@ function MainApp() {
       if (savedId) {
         const p = players.find(p => p.id === savedId);
         if (p && p.pin) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setCurrentPlayer(p);
         } else {
           // If player exists but has no PIN, force re-login/setup
@@ -75,10 +76,11 @@ function MainApp() {
     if (currentPlayer) {
       const updatedPlayer = players.find(p => p.id === currentPlayer.id);
       if (updatedPlayer && JSON.stringify(updatedPlayer) !== JSON.stringify(currentPlayer)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentPlayer(updatedPlayer);
       }
     }
-  }, [players]);
+  }, [players, currentPlayer]);
 
   const handleLogout = () => {
     localStorage.removeItem('fifa_tracker_current_player_id');

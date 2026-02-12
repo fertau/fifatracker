@@ -55,6 +55,7 @@ export function SessionSetup({ currentUser }: { currentUser: Player }) {
             setNewPin('');
             setShowQuickAdd(false);
         } catch (error) {
+            console.error('Error al registrar jugador', error);
             alert('Error al registrar jugador');
         } finally {
             setCreating(false);

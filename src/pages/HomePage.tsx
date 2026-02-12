@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart, ChevronRight } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
-import { useLeaderboard } from '../hooks/useLeaderboard';
+import { useLeaderboard, type RankedPlayer } from '../hooks/useLeaderboard';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -24,8 +24,8 @@ export function HomePage({ player }: DashboardProps) {
     const [rankingPeriod, setRankingPeriod] = useState<'all' | 'recent'>('all');
     const displayRanking = rankingPeriod === 'all' ? rankedPlayers : recentRankedPlayers;
 
-    const currentPlayerWithStats = displayRanking.find((p: any) => p.id === player.id);
-    const myRank = displayRanking.findIndex((p: any) => p.id === player.id) + 1;
+    const currentPlayerWithStats = displayRanking.find((p: RankedPlayer) => p.id === player.id);
+    const myRank = displayRanking.findIndex((p: RankedPlayer) => p.id === player.id) + 1;
 
     const [showBreakdown, setShowBreakdown] = useState<string | null>(null);
     const [showFormDetail, setShowFormDetail] = useState(false);
@@ -73,7 +73,15 @@ export function HomePage({ player }: DashboardProps) {
     })();
 
     // Derive Social News from Sessions
-    const socialNews: any[] = [];
+    const socialNews: Array<{
+        id: string;
+        type: string;
+        title: string;
+        content: string;
+        time: string;
+        icon: JSX.Element;
+        badge?: string;
+    }> = [];
 
     // 1. Session News (Top 5 sessions)
     sessions.slice(0, 5).forEach((session, sIdx) => {
@@ -110,7 +118,6 @@ export function HomePage({ player }: DashboardProps) {
                 const pIds = Array.from(participantIds);
                 let p1Wins = 0;
                 let p2Wins = 0;
-                let draws = 0;
 
                 session.forEach(m => {
                     const p1Id = pIds[0];
@@ -135,15 +142,15 @@ export function HomePage({ player }: DashboardProps) {
                 if (count >= 5) badge = 'Maratón';
                 if (Math.abs(p1Wins - p2Wins) < 2 && count > 3) badge = 'Clásico';
 
-                socialNews.push({
-                    id: `session-${sIdx}`,
-                    type: 'session',
-                    title: 'Duelo Finalizado',
-                    content: `${p1Wins > p2Wins ? '👑 ' : ''}${p1Name} ${p1Wins} - ${p2Wins} ${p2Name}${p2Wins > p1Wins ? ' 👑' : ''}`,
-                    time: `${count} partidas jugadas`,
-                    icon: <Users className="w-4 h-4 text-accent" />,
-                    badge: badge
-                });
+            socialNews.push({
+                id: `session-${sIdx}`,
+                type: 'session',
+                title: 'Duelo Finalizado',
+                content: `${p1Wins > p2Wins ? '👑 ' : ''}${p1Name} ${p1Wins} - ${p2Wins} ${p2Name}${p2Wins > p1Wins ? ' 👑' : ''}`,
+                time: `${count} partidas jugadas`,
+                icon: <Users className="w-4 h-4 text-accent" />,
+                badge: badge
+            });
             } else {
                 // Multi-player Session
                 const playerNames = getNames(Array.from(participantIds));
@@ -467,7 +474,7 @@ export function HomePage({ player }: DashboardProps) {
                     </Link>
                 </div>
                 <div className="space-y-2">
-                    {displayRanking.slice(0, 3).map((p: any, idx: number) => {
+                    {displayRanking.slice(0, 3).map((p: RankedPlayer, idx: number) => {
                         const breakdown = getScoreBreakdown(p.derivedStats);
                         return (
                             <Card key={p.id} className={cn("p-4 flex items-center justify-between border-white/5 transition-all hover:border-white/20", idx === 0 && "border-yellow-500/20 bg-yellow-500/5")}>

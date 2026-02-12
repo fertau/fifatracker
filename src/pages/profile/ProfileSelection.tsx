@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Lock } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
@@ -20,14 +20,8 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
     const [newPin, setNewPin] = useState('');
     const [selectedAvatar, setSelectedAvatar] = useState('⚽');
 
-    // Effect to randomize initial avatar
-    useEffect(() => {
-        if (isCreating) {
-            const defaultAvatars = ['⚽', '🦁', '👻', '🎮', '🚀', '🏆', '🔥', '💎', '🦖', '🦈'];
-            setSelectedAvatar(defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)]);
-        }
-    }, [isCreating]);
     const [searchQuery, setSearchQuery] = useState('');
+    const defaultAvatars = ['⚽', '🦁', '👻', '🎮', '🚀', '🏆', '🔥', '💎', '🦖', '🦈'];
 
     // Login flow
     const [selectedPlayerForLogin, setSelectedPlayerForLogin] = useState<Player | null>(null);
@@ -275,7 +269,10 @@ export function ProfileSelection({ onSelect }: ProfileSelectionProps) {
                                 <Card
                                     glass={false}
                                     className="cursor-pointer border-dashed border-2 border-white/10 hover:border-primary/50 flex flex-col items-center justify-center gap-3 py-6 text-gray-500 hover:text-white transition-all bg-transparent"
-                                    onClick={() => setIsCreating(true)}
+                                    onClick={() => {
+                                        setSelectedAvatar(defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)]);
+                                        setIsCreating(true);
+                                    }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >

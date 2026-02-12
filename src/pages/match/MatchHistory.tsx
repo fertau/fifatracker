@@ -216,6 +216,7 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
             await updateMatch(editingMatch, updatedMatch, audit);
             setEditingMatch(null);
         } catch (error) {
+            console.error('Error al actualizar el partido', error);
             alert('Error al actualizar el partido');
         }
     };
@@ -449,14 +450,14 @@ export function MatchHistory({ currentUser }: MatchHistoryProps) {
             <div className="space-y-2">
                 {/* Match Type Filter */}
                 <div className="flex gap-2 p-1 bg-white/[0.02] rounded-xl border border-white/5">
-                    {[
+                    {([
                         { id: 'all', label: 'Todos' },
                         { id: '1v1', label: '1 vs 1' },
                         { id: '2v2', label: '2 vs 2' }
-                    ].map((f) => (
+                    ] as const).map((f) => (
                         <button
                             key={f.id}
-                            onClick={() => setMatchTypeFilter(f.id as any)}
+                            onClick={() => setMatchTypeFilter(f.id)}
                             className={cn(
                                 "flex-1 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
                                 matchTypeFilter === f.id ? "bg-white/10 text-white" : "text-gray-600 hover:text-gray-400"

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import {
     collection,
@@ -82,8 +83,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         };
     }, []);
 
-    const cleanData = (data: any) => {
-        return JSON.parse(JSON.stringify(data));
+    const cleanData = <T,>(data: T): T => {
+        return JSON.parse(JSON.stringify(data)) as T;
     };
 
     const addPlayer = async (name: string, avatar: string, pin: string = '1234') => {
@@ -261,6 +262,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const addMatch = async (match: Match) => {
         try {
             const { id, ...matchData } = match;
+            void id;
             await addDoc(collection(db, 'matches'), cleanData(matchData));
             await updateStatsForPlayers(match);
         } catch (error) {
@@ -278,6 +280,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const history = oldMatch.edits || [];
             const newHistory = [...history, audit];
             const { id, ...matchData } = updatedMatch;
+            void id;
             const cleanedData = cleanData({ ...matchData, edits: newHistory });
 
             // 3. Save to Firestore

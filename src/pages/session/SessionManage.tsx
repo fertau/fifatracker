@@ -18,6 +18,7 @@ export function SessionManage({ currentUser }: { currentUser: Player }) {
 
     useEffect(() => {
         if (session) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelectedPlayers(session.playersPresent);
         }
     }, [session]);

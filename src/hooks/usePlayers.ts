@@ -1,4 +1,5 @@
 import { useData } from '../context/DataContext';
+import type { Match } from '../types';
 
 export function usePlayers() {
     const {
@@ -37,12 +38,12 @@ export function usePlayers() {
     };
 
     const saveMatch = async (
-        gameType: any,
+        gameType: Match['type'],
         team1: string[],
         team2: string[],
         score1: number,
         score2: number,
-        endedBy: any,
+        endedBy: Match['endedBy'],
         penaltyWinner?: 1 | 2,
         forfeitLoser?: 1 | 2,
         dateParam?: number,
