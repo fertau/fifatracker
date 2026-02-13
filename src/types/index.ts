@@ -21,6 +21,7 @@ export interface Player {
     ownerId: string;
     createdAt: number;
     isPinned?: boolean; // If true, shows in normal profile selection
+    isAdmin?: boolean;
 }
 
 export interface AuditLogEntry {

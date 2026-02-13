@@ -25,7 +25,7 @@ import { AuthProvider } from './context/AuthContext';
 import { useRememberedAccounts } from './hooks/useRememberedAccounts';
 
 function MainApp() {
-  const { players, loading } = useData();
+  const { players, loading, updatePlayer } = useData();
   const { rememberAccount } = useRememberedAccounts();
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
   const [showSplash, setShowSplash] = useState(true);
@@ -63,13 +63,18 @@ function MainApp() {
       localStorage.setItem('fifa_tracker_current_player_id', currentPlayer.id);
       // Remember this account on this device for quick login
       rememberAccount(currentPlayer.id);
-      if (currentPlayer.name.toLowerCase() === 'fertau') {
-        localStorage.setItem('is_fertau_admin', 'true');
-      }
     } else {
       localStorage.removeItem('fifa_tracker_current_player_id');
     }
   }, [currentPlayer, loading, rememberAccount]);
+
+  // Admin flag bootstrap for legacy admin user
+  useEffect(() => {
+    if (!currentPlayer || loading) return;
+    if (!currentPlayer.isAdmin && currentPlayer.name.toLowerCase() === 'fertau') {
+      updatePlayer(currentPlayer.id, { isAdmin: true });
+    }
+  }, [currentPlayer, loading, updatePlayer]);
 
   // Keep current player synced with DB
   useEffect(() => {
@@ -110,14 +115,14 @@ function MainApp() {
                 <Route path="/profile" element={
                   <ProfilePage player={currentPlayer} onLogout={handleLogout} />
                 } />
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={currentPlayer.isAdmin ? <AdminDashboard /> : <Navigate to="/" replace />} />
                 <Route path="/session/new" element={<SessionSetup currentUser={currentPlayer} />} />
                 <Route path="/session/manage" element={<SessionManage currentUser={currentPlayer} />} />
                 <Route path="/stats" element={<StatsPage player={currentPlayer} />} />
                 <Route path="/history" element={<MatchHistory currentUser={currentPlayer} />} />
                 <Route path="/friends" element={<FriendsList currentUser={currentPlayer} />} />
                 <Route path="/match/new" element={<NewMatch />} />
-                <Route path="/tournaments" element={<TournamentList />} />
+                <Route path="/tournaments" element={<TournamentList currentUser={currentPlayer} />} />
                 <Route path="/tournament/new" element={<NewTournament currentUser={currentPlayer} />} />
                 <Route path="/tournament/:id" element={<TournamentDetails currentUser={currentPlayer} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

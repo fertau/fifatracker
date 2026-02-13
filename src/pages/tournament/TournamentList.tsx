@@ -2,13 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { Trophy, Calendar, Users, ChevronRight, Plus, Crown, ArrowLeft, EyeOff, Lock } from 'lucide-react';
 import { useTournaments } from '../../hooks/useTournaments';
 import { useSession } from '../../context/SessionContext';
+import type { Player } from '../../types';
 
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
 
 
-export function TournamentList() {
+export function TournamentList({ currentUser }: { currentUser: Player }) {
     const navigate = useNavigate();
     const { session, isSessionActive } = useSession();
     const { tournaments, getTournamentMatches, deleteTournament } = useTournaments();
@@ -171,7 +172,7 @@ export function TournamentList() {
             )}
 
             {/* DANGER ZONE: CLEANUP */}
-            {localStorage.getItem('is_fertau_admin') === 'true' && (
+            {currentUser.isAdmin && (
                 <div className="pt-10 border-t border-red-500/20 mt-10 text-center">
                     <Button variant="ghost" className="text-red-500 text-xs uppercase font-black tracking-widest hover:bg-red-500/10" onClick={handleDeleteAll}>
                         Eliminar TODOS los torneos (Cleanup)

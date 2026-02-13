@@ -94,13 +94,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 avatar,
                 pin, // Now required
                 stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
+                derivedStats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 },
                 friends: [],
                 friendRequests: [],
                 sentRequests: [],
                 visibility: 'public' as const,
                 createdAt: Date.now(),
                 ownerId: auth.currentUser?.uid || 'anonymous',
-                isPinned: true
+                isPinned: true,
+                isAdmin: false
             };
             const newPlayer = cleanData(rawPlayer);
             const docRef = await addDoc(collection(db, 'players'), newPlayer);
@@ -250,7 +252,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                         goalsConceded: Math.max(0, currentStats.goalsConceded + (opponentScore * factor))
                     };
 
-                    transaction.update(playerDoc.ref, { stats: newStats });
+                    transaction.update(playerDoc.ref, { stats: newStats, derivedStats: newStats });
                 }
             });
         } catch (error) {
@@ -351,7 +353,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const resetStats = { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, goalsScored: 0, goalsConceded: 0 };
         playersSnapshot.docs.forEach(pDoc => {
-            batch.update(pDoc.ref, { stats: resetStats });
+            batch.update(pDoc.ref, { stats: resetStats, derivedStats: resetStats });
         });
         await batch.commit();
 

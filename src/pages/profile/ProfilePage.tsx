@@ -233,7 +233,7 @@ export function ProfilePage({ player, onLogout }: ProfilePageProps) {
                 </div>
 
                 {/* Admin Access (Fertau only) */}
-                {player.name.toLowerCase() === 'fertau' && (
+                {player.isAdmin && (
                     <div className="pt-6 border-t border-white/5">
                         <Button
                             variant="ghost"

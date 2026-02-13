@@ -7,18 +7,21 @@ import { useSession } from '../../context/SessionContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import type { Match } from '../../types';
+import { useData } from '../../context/DataContext';
 
 export function NewMatch() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { players, saveMatch } = usePlayers();
     const { session, isSessionActive } = useSession();
+    const { tournaments, matches } = useData();
 
     const t1Param = searchParams.get('t1');
     const t2Param = searchParams.get('t2');
     const tournamentId = searchParams.get('tournamentId');
 
     const tournamentFixtureSlot = searchParams.get('tournamentFixtureSlot');
+    const fixtureSlotNum = tournamentFixtureSlot ? parseInt(tournamentFixtureSlot) : undefined;
 
     const [gameType, setGameType] = useState<Match['type']>('1v1');
 
@@ -79,6 +82,33 @@ export function NewMatch() {
             alert('Debes seleccionar quién abandonó el partido.');
             return;
         }
+        if (tournamentId && fixtureSlotNum !== undefined) {
+            const tournament = tournaments.find(t => t.id === tournamentId);
+            if (!tournament) {
+                alert('Torneo no encontrado.');
+                return;
+            }
+            if (tournament.status === 'completed') {
+                alert('Este torneo ya finalizó. No se pueden registrar más partidos.');
+                return;
+            }
+            const existing = matches.find(m => m.tournamentId === tournamentId && m.tournamentFixtureSlot === fixtureSlotNum);
+            if (existing) {
+                alert('Este fixture ya fue registrado.');
+                return;
+            }
+            const fixture = tournament.fixtures?.[fixtureSlotNum];
+            if (!fixture) {
+                alert('Fixture inválido.');
+                return;
+            }
+            const expectedT1 = fixture.team1[0];
+            const expectedT2 = fixture.team2[0];
+            if ((expectedT1 && team1[0] !== expectedT1) || (expectedT2 && team2[0] !== expectedT2)) {
+                alert('Los jugadores no coinciden con el fixture del torneo.');
+                return;
+            }
+        }
         setIsSaving(true);
         try {
             if (saveMatch) {
@@ -93,7 +123,7 @@ export function NewMatch() {
                     forfeitLoser,
                     new Date(matchDate).getTime(),
                     tournamentId || undefined,
-                    tournamentFixtureSlot ? parseInt(tournamentFixtureSlot) : undefined
+                    fixtureSlotNum
                 );
             }
             // Instead of immediate navigate, show summary
