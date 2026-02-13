@@ -1,4 +1,4 @@
-import type { Match, Player } from '../types';
+import type { Match, Player, PlayerStats } from '../types';
 
 export interface Achievement {
     id: string;

@@ -57,6 +57,7 @@ export function TournamentDetails({ currentUser }: TournamentDetailsProps) {
     };
 
     const handleDelete = async () => {
+        if (!tournament) return;
         if (confirm('¿Seguro que quieres eliminar este torneo?')) {
             try {
                 await deleteTournament(tournament.id);

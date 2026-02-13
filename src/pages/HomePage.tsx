@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import { cn, getScoreBreakdown } from '../lib/utils';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Info } from 'lucide-react';
 import { FormStateDetail } from '../components/dashboard/FormStateDetail';
 import type { Player, Match } from '../types';
@@ -79,7 +80,7 @@ export function HomePage({ player }: DashboardProps) {
         title: string;
         content: string;
         time: string;
-        icon: JSX.Element;
+        icon: ReactNode;
         badge?: string;
     }> = [];
 
@@ -126,7 +127,7 @@ export function HomePage({ player }: DashboardProps) {
                     const s2 = isP1Team1 ? m.score.team2 : m.score.team1;
 
                     if (m.endedBy === 'regular') {
-                        if (s1 > s2) p1Wins++; else if (s2 > s1) p2Wins++; else draws++;
+                        if (s1 > s2) p1Wins++; else if (s2 > s1) p2Wins++;
                     } else {
                         // Penalties or Forfeit
                         const winTeam = m.endedBy === 'penalties' ? m.penaltyWinner : (m.forfeitLoser === 1 ? 2 : 1);
