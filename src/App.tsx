@@ -72,7 +72,9 @@ function MainApp() {
   useEffect(() => {
     if (!currentPlayer || loading) return;
     if (!currentPlayer.isAdmin && currentPlayer.name.toLowerCase() === 'fertau') {
-      updatePlayer(currentPlayer.id, { isAdmin: true });
+      updatePlayer(currentPlayer.id, { isAdmin: true }).catch((error) => {
+        console.warn('No se pudo marcar admin automáticamente:', error);
+      });
     }
   }, [currentPlayer, loading, updatePlayer]);
 

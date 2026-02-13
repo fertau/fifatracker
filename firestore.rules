@@ -1,0 +1,88 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    function playerOwner(playerId) {
+      return exists(/databases/$(database)/documents/players/$(playerId)) &&
+        get(/databases/$(database)/documents/players/$(playerId)).data.ownerId == request.auth.uid;
+    }
+
+    function nonOwnerAllowedPlayerUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly([
+        'stats',
+        'derivedStats',
+        'friends',
+        'friendRequests',
+        'sentRequests'
+      ]);
+    }
+
+    function validMatch() {
+      return request.resource.data.players.team1.size() > 0
+        && request.resource.data.players.team2.size() > 0
+        && (
+          request.resource.data.endedBy == 'regular'
+          || (request.resource.data.endedBy == 'penalties' && request.resource.data.penaltyWinner in [1, 2])
+          || (request.resource.data.endedBy == 'forfeit' && request.resource.data.forfeitLoser in [1, 2])
+        );
+    }
+
+    function validTournamentMatch() {
+      return !('tournamentId' in request.resource.data)
+        || (
+          ('tournamentFixtureSlot' in request.resource.data)
+          && exists(/databases/$(database)/documents/tournaments/$(request.resource.data.tournamentId))
+          && get(/databases/$(database)/documents/tournaments/$(request.resource.data.tournamentId)).data.status != 'completed'
+          && get(/databases/$(database)/documents/tournaments/$(request.resource.data.tournamentId)).data.fixtures.size() > request.resource.data.tournamentFixtureSlot
+          && get(/databases/$(database)/documents/tournaments/$(request.resource.data.tournamentId)).data.fixtures[request.resource.data.tournamentFixtureSlot].team1[0]
+              == request.resource.data.players.team1[0]
+          && get(/databases/$(database)/documents/tournaments/$(request.resource.data.tournamentId)).data.fixtures[request.resource.data.tournamentFixtureSlot].team2[0]
+              == request.resource.data.players.team2[0]
+        );
+    }
+
+    match /players/{playerId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
+
+      allow update: if isSignedIn() && (
+        isAdmin()
+        || resource.data.ownerId == request.auth.uid
+        || nonOwnerAllowedPlayerUpdate()
+      ) && (
+        request.resource.data.isAdmin == resource.data.isAdmin || isAdmin()
+      );
+
+      allow delete: if isSignedIn() && (isAdmin() || resource.data.ownerId == request.auth.uid);
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && playerOwner(request.resource.data.createdBy);
+
+      allow update: if isSignedIn()
+        && (isAdmin() || playerOwner(resource.data.createdBy));
+
+      allow delete: if isSignedIn()
+        && (isAdmin() || playerOwner(resource.data.createdBy));
+    }
+
+    match /matches/{matchId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && validMatch() && validTournamentMatch();
+      allow update: if isSignedIn() && validMatch() && validTournamentMatch();
+      allow delete: if isSignedIn();
+    }
+  }
+}
