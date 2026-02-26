@@ -87,6 +87,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return JSON.parse(JSON.stringify(data)) as T;
     };
 
+    const assertValidMatchOutcome = (match: Match) => {
+        if (match.endedBy === 'penalties' && !match.penaltyWinner) {
+            throw new Error('Invalid match: penalties requires penaltyWinner');
+        }
+        if (match.endedBy === 'forfeit' && !match.forfeitLoser) {
+            throw new Error('Invalid match: forfeit requires forfeitLoser');
+        }
+    };
+
     const addPlayer = async (name: string, avatar: string, pin: string = '1234') => {
         try {
             const rawPlayer = {
@@ -263,6 +272,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const addMatch = async (match: Match) => {
         try {
+            assertValidMatchOutcome(match);
             const { id, ...matchData } = match;
             void id;
             await addDoc(collection(db, 'matches'), cleanData(matchData));
@@ -275,6 +285,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const updateMatch = async (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => {
         try {
+            assertValidMatchOutcome(updatedMatch);
             // 1. Revert old stats
             await updateStatsForPlayers(oldMatch, true);
 

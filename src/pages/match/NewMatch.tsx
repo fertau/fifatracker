@@ -72,14 +72,22 @@ export function NewMatch() {
 
     const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = async () => {
-        if (isSaving) return;
+    const getOutcomeValidationError = () => {
         if (endedBy === 'penalties' && !penaltyWinner) {
-            alert('Debes seleccionar el ganador por penales.');
-            return;
+            return 'Debes seleccionar el ganador por penales.';
         }
         if (endedBy === 'forfeit' && !forfeitLoser) {
-            alert('Debes seleccionar quién abandonó el partido.');
+            return 'Debes seleccionar quién abandonó el partido.';
+        }
+        return null;
+    };
+
+    const outcomeValidationError = getOutcomeValidationError();
+
+    const handleSave = async () => {
+        if (isSaving) return;
+        if (outcomeValidationError) {
+            alert(outcomeValidationError);
             return;
         }
         if (tournamentId && fixtureSlotNum !== undefined) {
@@ -280,19 +288,29 @@ export function NewMatch() {
                         <div className="border-t border-white/10 pt-4 px-4 space-y-3">
                             <div className="flex gap-2 justify-center text-xs font-bold uppercase text-gray-400 pb-2">
                                 <button
-                                    onClick={() => setEndedBy('regular')}
+                                    onClick={() => {
+                                        setEndedBy('regular');
+                                        setPenaltyWinner(undefined);
+                                        setForfeitLoser(undefined);
+                                    }}
                                     className={`px-3 py-1 rounded-full ${endedBy === 'regular' ? 'bg-white text-black' : 'bg-black/20'}`}
                                 >
                                     Tiempo Regular
                                 </button>
                                 <button
-                                    onClick={() => setEndedBy('penalties')}
+                                    onClick={() => {
+                                        setEndedBy('penalties');
+                                        setForfeitLoser(undefined);
+                                    }}
                                     className={`px-3 py-1 rounded-full ${endedBy === 'penalties' ? 'bg-yellow-500 text-black' : 'bg-black/20'}`}
                                 >
                                     Penales
                                 </button>
                                 <button
-                                    onClick={() => setEndedBy('forfeit')}
+                                    onClick={() => {
+                                        setEndedBy('forfeit');
+                                        setPenaltyWinner(undefined);
+                                    }}
                                     className={`px-3 py-1 rounded-full ${endedBy === 'forfeit' ? 'bg-red-500 text-black' : 'bg-black/20'}`}
                                 >
                                     Abandono
@@ -347,7 +365,7 @@ export function NewMatch() {
 
                     <div className="flex gap-4">
                         <Button variant="ghost" className="flex-1" onClick={() => setStep('setup')}>Back</Button>
-                        <Button className="flex-[2]" glow size="lg" onClick={handleSave} disabled={isSaving}>
+                        <Button className="flex-[2]" glow size="lg" onClick={handleSave} disabled={isSaving || !!outcomeValidationError}>
                             <Trophy className="w-5 h-5" /> {isSaving ? 'GUARDANDO...' : 'FINALIZAR PARTIDO'}
                         </Button>
                     </div>
