@@ -35,7 +35,7 @@ export function HeatGauge({ score, size = 'md' }: HeatGaugeProps) {
             </div>
             <span className={cn(
                 'text-gray-400 whitespace-nowrap',
-                size === 'sm' ? 'text-[10px]' : 'text-xs'
+                size === 'sm' ? 'text-xs' : 'text-sm'
             )}>
                 {getLabel()}
             </span>

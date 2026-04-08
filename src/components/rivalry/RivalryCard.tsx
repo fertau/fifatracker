@@ -37,7 +37,7 @@ export function RivalryCard({ rivalry, currentPlayerId, onTogglePin }: RivalryCa
                         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-lg">
                             {me?.avatar || '👤'}
                         </div>
-                        <span className="text-[10px] text-gray-400 truncate max-w-[60px]">{me?.name}</span>
+                        <span className="text-xs text-gray-400 truncate max-w-[60px]">{me?.name}</span>
                     </div>
 
                     {/* Record */}
@@ -61,7 +61,7 @@ export function RivalryCard({ rivalry, currentPlayerId, onTogglePin }: RivalryCa
                         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-lg">
                             {opponent?.avatar || '👤'}
                         </div>
-                        <span className="text-[10px] text-gray-400 truncate max-w-[60px]">{opponent?.name}</span>
+                        <span className="text-xs text-gray-400 truncate max-w-[60px]">{opponent?.name}</span>
                     </div>
 
                     <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors" />

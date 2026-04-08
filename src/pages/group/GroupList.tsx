@@ -75,7 +75,7 @@ export function GroupList({ currentUser }: GroupListProps) {
                                 >
                                     <span className="text-lg">{p.avatar}</span>
                                     <span className="truncate">{p.name}</span>
-                                    {p.id === currentUser.id && <span className="text-[8px] text-primary">TÚ</span>}
+                                    {p.id === currentUser.id && <span className="text-[10px] text-primary font-bold">TÚ</span>}
                                 </button>
                             ))}
                         </div>

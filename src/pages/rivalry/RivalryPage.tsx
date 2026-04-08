@@ -92,7 +92,7 @@ export function RivalryPage({ currentUser }: RivalryPageProps) {
 
                     <div className="flex flex-col items-center">
                         <Swords className="w-6 h-6 text-primary mb-1" />
-                        <span className="text-xs text-gray-400 uppercase tracking-widest">vs</span>
+                        <span className="text-xs text-gray-300 uppercase tracking-widest">vs</span>
                     </div>
 
                     <div className="flex flex-col items-center gap-1">
@@ -126,24 +126,24 @@ export function RivalryPage({ currentUser }: RivalryPageProps) {
                             <div className={cn('text-4xl font-bold', myWins > theirWins ? 'text-green-400' : 'text-white')}>
                                 {allTimeRecord.a}
                             </div>
-                            <div className="text-[10px] text-gray-400 uppercase">{playerA?.name}</div>
+                            <div className="text-xs text-gray-400 uppercase">{playerA?.name}</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-light text-gray-500">{allTimeRecord.draws}</div>
-                            <div className="text-[10px] text-gray-500 uppercase">Empates</div>
+                            <div className="text-2xl font-light text-gray-400">{allTimeRecord.draws}</div>
+                            <div className="text-xs text-gray-400 uppercase">Empates</div>
                         </div>
                         <div className="text-center">
                             <div className={cn('text-4xl font-bold', theirWins > myWins ? 'text-red-400' : 'text-white')}>
                                 {allTimeRecord.b}
                             </div>
-                            <div className="text-[10px] text-gray-400 uppercase">{playerB?.name}</div>
+                            <div className="text-xs text-gray-400 uppercase">{playerB?.name}</div>
                         </div>
                     </div>
                     <p className="text-sm text-gray-400 italic">{commentary}</p>
                     <div className="flex justify-center">
                         <HeatGauge score={heatScore} size="md" />
                     </div>
-                    <p className="text-[10px] text-gray-500">{totalMatches} partidos jugados</p>
+                    <p className="text-xs text-gray-400">{totalMatches} partidos jugados</p>
                 </div>
             </Card>
 
