@@ -215,7 +215,7 @@ export function HomePage({ player }: DashboardProps) {
             {/* Social News Feed (Carousel) */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                         <TrendingUp className="w-3 h-3 text-secondary" /> Novedades
                     </h3>
                     <div className="flex gap-1">
@@ -305,7 +305,7 @@ export function HomePage({ player }: DashboardProps) {
             {/* Performance Metrics */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                         <Activity className="w-3 h-3 text-primary" /> Rendimiento
                     </h3>
                     <span className="text-[10px] text-gray-500 uppercase font-bold italic">Últimos 10</span>
@@ -449,7 +449,7 @@ export function HomePage({ player }: DashboardProps) {
             {rivalries.length > 0 && (
                 <section className="space-y-3">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                             <Swords className="w-3 h-3 text-red-400" /> Rivalidades
                         </h3>
                         <span className="text-[10px] text-gray-500 uppercase font-bold italic">{rivalries.length} activas</span>
@@ -470,7 +470,7 @@ export function HomePage({ player }: DashboardProps) {
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                             <Star className="w-3 h-3 text-yellow-500" /> Ranking
                         </h3>
                         <div className="flex bg-white/5 p-0.5 rounded-lg border border-white/10 scale-90 origin-left">
@@ -567,7 +567,7 @@ export function HomePage({ player }: DashboardProps) {
 
             {/* Community */}
             <section className="space-y-3">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                     <Users className="w-3 h-3 text-primary" /> Comunidad
                 </h3>
                 <Link to="/friends">

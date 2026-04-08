@@ -235,7 +235,7 @@ export function StatsPage({ player }: StatsPageProps) {
             {/* Performance Charts */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                         <TrendingUp className="w-3 h-3 text-primary" /> Evolución de Rendimiento
                     </h3>
                 </div>
