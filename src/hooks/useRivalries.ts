@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import { useRivalry, getRivalryKey, type RivalryStats } from './useRivalry';
+import { getRivalryKey, type RivalryStats } from './useRivalry';
 
 export interface DetectedRivalry {
     playerAId: string;
@@ -60,7 +60,7 @@ export function useRivalries(playerId: string): {
 
     // Since we can't use hooks in loops, compute stats directly
     const rivalriesWithStats = useMemo(() => {
-        return allRivalries.map(({ playerAId, playerBId, key, opponentId, isPinned }) => {
+        return allRivalries.map(({ playerAId, playerBId, key, isPinned }) => {
             // Inline computation matching useRivalry logic
             const rivalryMatches = matches.filter(m => {
                 const aInTeam1 = m.players.team1.includes(playerAId);

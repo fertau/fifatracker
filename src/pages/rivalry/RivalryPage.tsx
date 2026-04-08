@@ -36,7 +36,6 @@ export function RivalryPage({ currentUser }: RivalryPageProps) {
     const isPlayerA = currentUser.id === playerAId;
     const myWins = isPlayerA ? allTimeRecord.a : allTimeRecord.b;
     const theirWins = isPlayerA ? allTimeRecord.b : allTimeRecord.a;
-    const opponent = isPlayerA ? playerB : playerA;
 
     const pinnedKeys = currentUser.pinnedRivalries || [];
     const rivalryKey = getRivalryKey(playerAId, playerBId);

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useData } from '../context/DataContext';
-import type { PlayerGroup, Match } from '../types';
+import type { PlayerGroup } from '../types';
 
 export interface GroupRankedPlayer {
     id: string;
@@ -16,7 +16,7 @@ export interface GroupRankedPlayer {
 }
 
 export function useGroups(playerId: string) {
-    const { groups, matches, players, addGroup, updateGroup, deleteGroup } = useData();
+    const { groups, addGroup, updateGroup, deleteGroup } = useData();
 
     const myGroups = useMemo(() => {
         return groups.filter(g => g.members.includes(playerId));

@@ -11,7 +11,7 @@ interface RivalryCardProps {
     onTogglePin?: () => void;
 }
 
-export function RivalryCard({ rivalry, currentPlayerId, onTogglePin }: RivalryCardProps) {
+export function RivalryCard({ rivalry, currentPlayerId }: RivalryCardProps) {
     const { stats, playerAId, playerBId, isPinned } = rivalry;
     const { playerA, playerB } = stats;
 

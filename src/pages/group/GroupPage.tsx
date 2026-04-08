@@ -4,7 +4,6 @@ import { useData } from '../../context/DataContext';
 import { useGroupRankings } from '../../hooks/useGroups';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { cn } from '../../lib/utils';
 import type { Player } from '../../types';
 
 interface GroupPageProps {
