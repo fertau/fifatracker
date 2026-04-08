@@ -199,7 +199,7 @@ export function HomePage({ player }: DashboardProps) {
     }
 
     return (
-        <div className="space-y-6 pb-10 animate-in fade-in duration-500">
+        <div className="space-y-6 pb-20 animate-in fade-in duration-500">
             {/* Main Header / Dashboard Info */}
             <div className="flex items-center justify-between">
                 <div>

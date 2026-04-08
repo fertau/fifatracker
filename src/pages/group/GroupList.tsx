@@ -67,6 +67,8 @@ export function GroupList({ currentUser }: GroupListProps) {
                                 <button
                                     key={p.id}
                                     onClick={() => toggleMember(p.id)}
+                                    aria-label={`${selectedMembers.includes(p.id) ? 'Quitar' : 'Agregar'} ${p.name}`}
+                                    aria-pressed={selectedMembers.includes(p.id)}
                                     className={`flex items-center gap-2 p-2 rounded-xl text-sm transition-all ${
                                         selectedMembers.includes(p.id)
                                             ? 'bg-primary/20 border border-primary/30'

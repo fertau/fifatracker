@@ -23,7 +23,7 @@ export function RivalryCard({ rivalry, currentPlayerId, onTogglePin }: RivalryCa
     const theirWins = isPlayerA ? stats.allTimeRecord.b : stats.allTimeRecord.a;
 
     return (
-        <Link to={`/rivalry/${playerAId}/${playerBId}`}>
+        <Link to={`/rivalry/${playerAId}/${playerBId}`} aria-label={`Rivalidad ${me?.name} vs ${opponent?.name}`}>
             <Card glass className="p-4 relative group">
                 {/* Pin indicator */}
                 {isPinned && (

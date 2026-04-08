@@ -134,7 +134,7 @@ export function CinematicDraw({
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center gap-4"
                 >
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap justify-center gap-3">
                         {participants.map((p, i) => (
                             <motion.div
                                 key={p.id}
