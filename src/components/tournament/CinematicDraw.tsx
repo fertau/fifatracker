@@ -201,7 +201,7 @@ export function CinematicDraw({
                                 className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/10 backdrop-blur-sm"
                             >
                                 {/* Match number */}
-                                <span className="text-[10px] text-gray-600 font-mono font-bold w-6">{idx + 1}</span>
+                                <span className="text-xs text-gray-500 font-mono font-bold w-6">{idx + 1}</span>
 
                                 {/* Player A */}
                                 <div className="flex items-center gap-2 flex-1">
