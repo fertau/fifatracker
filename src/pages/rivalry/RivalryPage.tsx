@@ -1,5 +1,5 @@
-import { useParams, Navigate } from 'react-router-dom';
-import { Pin, PinOff, Trophy, Flame, Zap, Swords, TrendingUp } from 'lucide-react';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { Pin, PinOff, Trophy, Flame, Zap, Swords, TrendingUp, ArrowLeft } from 'lucide-react';
 import { useRivalry, getRivalryKey } from '../../hooks/useRivalry';
 import { useData } from '../../context/DataContext';
 import { Card } from '../../components/ui/Card';
@@ -14,6 +14,7 @@ interface RivalryPageProps {
 
 export function RivalryPage({ currentUser }: RivalryPageProps) {
     const { playerAId, playerBId } = useParams<{ playerAId: string; playerBId: string }>();
+    const navigate = useNavigate();
     const { updatePlayer } = useData();
 
     // Canonicalize: ensure IDs are sorted
@@ -80,6 +81,14 @@ export function RivalryPage({ currentUser }: RivalryPageProps) {
 
     return (
         <div className="space-y-6 pb-20">
+            {/* Back button */}
+            <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" /> Volver
+            </button>
+
             {/* Header */}
             <div className="text-center space-y-3">
                 <div className="flex items-center justify-center gap-6">
@@ -124,9 +133,9 @@ export function RivalryPage({ currentUser }: RivalryPageProps) {
                     <div className="flex items-center justify-center gap-4">
                         <div className="text-center">
                             <div className={cn('text-4xl font-bold', myWins > theirWins ? 'text-green-400' : 'text-white')}>
-                                {allTimeRecord.a}
+                                {myWins}
                             </div>
-                            <div className="text-xs text-gray-400 uppercase">{playerA?.name}</div>
+                            <div className="text-xs text-gray-400 uppercase">{isPlayerA ? playerA?.name : playerB?.name}</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-light text-gray-400">{allTimeRecord.draws}</div>
@@ -134,9 +143,9 @@ export function RivalryPage({ currentUser }: RivalryPageProps) {
                         </div>
                         <div className="text-center">
                             <div className={cn('text-4xl font-bold', theirWins > myWins ? 'text-red-400' : 'text-white')}>
-                                {allTimeRecord.b}
+                                {theirWins}
                             </div>
-                            <div className="text-xs text-gray-400 uppercase">{playerB?.name}</div>
+                            <div className="text-xs text-gray-400 uppercase">{isPlayerA ? playerB?.name : playerA?.name}</div>
                         </div>
                     </div>
                     <p className="text-sm text-gray-400 italic">{commentary}</p>
