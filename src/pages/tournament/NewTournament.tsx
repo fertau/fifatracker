@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ArrowRight } from 'lucide-react';
+import { Users, ArrowRight, Sparkles } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTournaments } from '../../hooks/useTournaments';
 import { useSession } from '../../context/SessionContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { CinematicDraw } from '../../components/tournament/CinematicDraw';
 import type { Player } from '../../types';
 
 interface NewTournamentProps {
@@ -15,7 +17,7 @@ interface NewTournamentProps {
 export function NewTournament({ currentUser }: NewTournamentProps) {
     const navigate = useNavigate();
     const { players } = usePlayers();
-    const { createTournament } = useTournaments();
+    const { createTournament, generateLeagueFixtures, generateKnockoutFixtures, updateTournament } = useTournaments();
     const { session, isSessionActive } = useSession();
 
     const [name, setName] = useState('');
@@ -23,11 +25,13 @@ export function NewTournament({ currentUser }: NewTournamentProps) {
     const [selectedPlayers, setSelectedPlayers] = useState<string[]>(() => {
         return isSessionActive && session ? session.playersPresent : [];
     });
+    const [showDraw, setShowDraw] = useState(false);
 
-    // Filter players based on active session
     const availablePlayers = isSessionActive && session
         ? players.filter(p => session.playersPresent.includes(p.id))
         : players;
+
+    const selectedParticipants = players.filter(p => selectedPlayers.includes(p.id));
 
     const togglePlayer = (id: string) => {
         if (selectedPlayers.includes(id)) {
@@ -37,22 +41,40 @@ export function NewTournament({ currentUser }: NewTournamentProps) {
         }
     };
 
-    const handleCreate = async () => {
-        if (!name || selectedPlayers.length < 2) return;
-        console.log('🎮 Creating tournament:', { name, type, selectedPlayers });
+    const generateFixtures = useCallback((playerIds: string[]) => {
+        return type === 'league'
+            ? generateLeagueFixtures(playerIds)
+            : generateKnockoutFixtures(playerIds);
+    }, [type, generateLeagueFixtures, generateKnockoutFixtures]);
+
+    const handleDrawConfirm = async (fixtures: { team1: string[]; team2: string[] }[]) => {
         try {
             const newTournament = await createTournament(name, type, selectedPlayers, currentUser.id);
-            console.log('✅ Tournament created:', newTournament);
-            // Pass tournament via state to avoid Firebase sync delay
-            console.log('🚀 Navigating to:', `/tournament/${newTournament.id}`);
+            // Store fixtures on the tournament
+            await updateTournament(newTournament.id, { fixtures });
+            navigate(`/tournament/${newTournament.id}`, {
+                state: { tournament: { ...newTournament, fixtures } }
+            });
+        } catch (error) {
+            console.error('Error creating tournament:', error);
+            alert('Error al crear el torneo');
+        }
+    };
+
+    const handleQuickCreate = async () => {
+        if (!name || selectedPlayers.length < 2) return;
+        try {
+            const newTournament = await createTournament(name, type, selectedPlayers, currentUser.id);
             navigate(`/tournament/${newTournament.id}`, {
                 state: { tournament: newTournament }
             });
         } catch (error) {
-            console.error('❌ Error creating tournament:', error);
+            console.error('Error creating tournament:', error);
             alert('Error al crear el torneo');
         }
     };
+
+    const canCreate = name.trim() && selectedPlayers.length >= 2;
 
     return (
         <div className="space-y-6 pb-20">
@@ -125,15 +147,41 @@ export function NewTournament({ currentUser }: NewTournamentProps) {
                 )}
             </div>
 
-            <Button
-                size="lg"
-                glow
-                className="w-full"
-                disabled={!name || selectedPlayers.length < 2}
-                onClick={handleCreate}
-            >
-                CREAR TORNEO <ArrowRight className="w-5 h-5" />
-            </Button>
+            {/* Two creation modes */}
+            <div className="space-y-3">
+                <Button
+                    size="lg"
+                    glow
+                    className="w-full"
+                    disabled={!canCreate}
+                    onClick={() => setShowDraw(true)}
+                >
+                    <Sparkles className="w-5 h-5 mr-2" /> SORTEO CINEMATOGRÁFICO
+                </Button>
+                <Button
+                    size="lg"
+                    variant="ghost"
+                    className="w-full"
+                    disabled={!canCreate}
+                    onClick={handleQuickCreate}
+                >
+                    CREAR RÁPIDO <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+            </div>
+
+            {/* Cinematic Draw Overlay */}
+            <AnimatePresence>
+                {showDraw && canCreate && (
+                    <CinematicDraw
+                        participants={selectedParticipants}
+                        tournamentName={name}
+                        tournamentType={type}
+                        generateFixtures={generateFixtures}
+                        onConfirm={handleDrawConfirm}
+                        onCancel={() => setShowDraw(false)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
