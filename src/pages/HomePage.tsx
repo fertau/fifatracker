@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart, ChevronRight } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart, ChevronRight, Swords } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard, type RankedPlayer } from '../hooks/useLeaderboard';
+import { useRivalries } from '../hooks/useRivalries';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
+import { RivalryCard } from '../components/rivalry/RivalryCard';
 import { cn, getScoreBreakdown } from '../lib/utils';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -22,6 +24,7 @@ export function HomePage({ player }: DashboardProps) {
     const { matches, loading } = useData();
 
     const { rankedPlayers, recentRankedPlayers } = useLeaderboard();
+    const { rivalries } = useRivalries(player.id);
     const [rankingPeriod, setRankingPeriod] = useState<'all' | 'recent'>('all');
     const displayRanking = rankingPeriod === 'all' ? rankedPlayers : recentRankedPlayers;
 
@@ -196,7 +199,7 @@ export function HomePage({ player }: DashboardProps) {
     }
 
     return (
-        <div className="space-y-6 pb-10 animate-in fade-in duration-500">
+        <div className="space-y-6 pb-20 animate-in fade-in duration-500">
             {/* Main Header / Dashboard Info */}
             <div className="flex items-center justify-between">
                 <div>
@@ -212,7 +215,7 @@ export function HomePage({ player }: DashboardProps) {
             {/* Social News Feed (Carousel) */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                         <TrendingUp className="w-3 h-3 text-secondary" /> Novedades
                     </h3>
                     <div className="flex gap-1">
@@ -302,7 +305,7 @@ export function HomePage({ player }: DashboardProps) {
             {/* Performance Metrics */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                         <Activity className="w-3 h-3 text-primary" /> Rendimiento
                     </h3>
                     <span className="text-[10px] text-gray-500 uppercase font-bold italic">Últimos 10</span>
@@ -442,11 +445,32 @@ export function HomePage({ player }: DashboardProps) {
                 </div>
             </section>
 
+            {/* Rivalidades */}
+            {rivalries.length > 0 && (
+                <section className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <Swords className="w-3 h-3 text-red-400" /> Rivalidades
+                        </h3>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold italic">{rivalries.length} activas</span>
+                    </div>
+                    <div className="space-y-2">
+                        {rivalries.slice(0, 5).map(rivalry => (
+                            <RivalryCard
+                                key={rivalry.key}
+                                rivalry={rivalry}
+                                currentPlayerId={player.id}
+                            />
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {/* Featured Ranking */}
             <section className="space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                             <Star className="w-3 h-3 text-yellow-500" /> Ranking
                         </h3>
                         <div className="flex bg-white/5 p-0.5 rounded-lg border border-white/10 scale-90 origin-left">
@@ -543,7 +567,7 @@ export function HomePage({ player }: DashboardProps) {
 
             {/* Community */}
             <section className="space-y-3">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 px-1">
                     <Users className="w-3 h-3 text-primary" /> Comunidad
                 </h3>
                 <Link to="/friends">

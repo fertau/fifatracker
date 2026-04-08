@@ -22,6 +22,7 @@ export interface Player {
     createdAt: number;
     isPinned?: boolean; // If true, shows in normal profile selection
     isAdmin?: boolean;
+    pinnedRivalries?: string[]; // Keys: [playerAId, playerBId].sort().join('_')
 }
 
 export interface AuditLogEntry {
@@ -71,4 +72,12 @@ export interface Session {
     startedAt: number;
     endedAt?: number;
     hostId?: string; // Optional host
+}
+
+export interface PlayerGroup {
+    id: string;
+    name: string;
+    members: string[]; // Player IDs
+    createdBy: string;
+    createdAt: number;
 }

@@ -10,6 +10,9 @@ import { SessionManage } from './pages/session/SessionManage';
 import { SessionSetup } from './pages/session/SessionSetup';
 import { TournamentDetails } from './pages/tournament/TournamentDetails';
 import { TournamentList } from './pages/tournament/TournamentList';
+import { RivalryPage } from './pages/rivalry/RivalryPage';
+import { GroupList } from './pages/group/GroupList';
+import { GroupPage } from './pages/group/GroupPage';
 import { MatchHistory } from './pages/match/MatchHistory';
 import { FriendsList } from './pages/social/FriendsList';
 import { HomePage } from './pages/HomePage';
@@ -127,6 +130,9 @@ function MainApp() {
                 <Route path="/tournaments" element={<TournamentList currentUser={currentPlayer} />} />
                 <Route path="/tournament/new" element={<NewTournament currentUser={currentPlayer} />} />
                 <Route path="/tournament/:id" element={<TournamentDetails currentUser={currentPlayer} />} />
+                <Route path="/rivalry/:playerAId/:playerBId" element={<RivalryPage currentUser={currentPlayer} />} />
+                <Route path="/groups" element={<GroupList currentUser={currentPlayer} />} />
+                <Route path="/group/:id" element={<GroupPage currentUser={currentPlayer} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

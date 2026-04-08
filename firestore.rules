@@ -21,7 +21,8 @@ service cloud.firestore {
         'derivedStats',
         'friends',
         'friendRequests',
-        'sentRequests'
+        'sentRequests',
+        'pinnedRivalries'
       ]);
     }
 
@@ -83,6 +84,19 @@ service cloud.firestore {
       allow create: if isSignedIn() && validMatch() && validTournamentMatch();
       allow update: if isSignedIn() && validMatch() && validTournamentMatch();
       allow delete: if isSignedIn();
+    }
+
+    match /groups/{groupId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        isAdmin()
+        || playerOwner(resource.data.createdBy)
+        // Allow members to leave (only removing themselves from members array)
+        || (request.resource.data.diff(resource.data).changedKeys().hasOnly(['members'])
+            && request.resource.data.members.size() == resource.data.members.size() - 1)
+      );
+      allow delete: if isSignedIn() && (isAdmin() || playerOwner(resource.data.createdBy));
     }
   }
 }

@@ -149,21 +149,23 @@ export function StatsPage({ player }: StatsPageProps) {
 
             {/* Nemesis */}
             {stats.nemesis.player && (
-                <Card className="relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-xl bg-red-500/20">
-                            <Target className="w-6 h-6 text-red-500" />
+                <Link to={`/rivalry/${[player.id, stats.nemesis.player.id].sort().join('/')}`}>
+                    <Card className="relative overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-xl bg-red-500/20">
+                                <Target className="w-6 h-6 text-red-500" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-lg">Tu Némesis</h3>
+                                <p className="text-sm text-gray-400">
+                                    {stats.nemesis.losses} derrotas contra {stats.nemesis.player.name}
+                                </p>
+                            </div>
+                            <div className="text-4xl">{stats.nemesis.player.avatar}</div>
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-bold text-lg">Tu Némesis</h3>
-                            <p className="text-sm text-gray-400">
-                                {stats.nemesis.losses} derrotas contra {stats.nemesis.player.name}
-                            </p>
-                        </div>
-                        <div className="text-4xl">{stats.nemesis.player.avatar}</div>
-                    </div>
-                </Card>
+                    </Card>
+                </Link>
             )}
 
             {/* Best Duo */}
@@ -233,7 +235,7 @@ export function StatsPage({ player }: StatsPageProps) {
             {/* Performance Charts */}
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                         <TrendingUp className="w-3 h-3 text-primary" /> Evolución de Rendimiento
                     </h3>
                 </div>
