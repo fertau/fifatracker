@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart, ChevronRight } from 'lucide-react';
+import { Trophy, Users, TrendingUp, Star, ArrowUpRight, Activity, MoreHorizontal, Heart, ChevronRight, Swords } from 'lucide-react';
 import { usePlayers } from '../hooks/usePlayers';
 import { useLeaderboard, type RankedPlayer } from '../hooks/useLeaderboard';
+import { useRivalries } from '../hooks/useRivalries';
 import { useData } from '../context/DataContext';
 import { Card } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
+import { RivalryCard } from '../components/rivalry/RivalryCard';
 import { cn, getScoreBreakdown } from '../lib/utils';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -22,6 +24,7 @@ export function HomePage({ player }: DashboardProps) {
     const { matches, loading } = useData();
 
     const { rankedPlayers, recentRankedPlayers } = useLeaderboard();
+    const { rivalries } = useRivalries(player.id);
     const [rankingPeriod, setRankingPeriod] = useState<'all' | 'recent'>('all');
     const displayRanking = rankingPeriod === 'all' ? rankedPlayers : recentRankedPlayers;
 
@@ -441,6 +444,27 @@ export function HomePage({ player }: DashboardProps) {
                     </div>
                 </div>
             </section>
+
+            {/* Rivalidades */}
+            {rivalries.length > 0 && (
+                <section className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <Swords className="w-3 h-3 text-red-400" /> Rivalidades
+                        </h3>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold italic">{rivalries.length} activas</span>
+                    </div>
+                    <div className="space-y-2">
+                        {rivalries.slice(0, 5).map(rivalry => (
+                            <RivalryCard
+                                key={rivalry.key}
+                                rivalry={rivalry}
+                                currentPlayerId={player.id}
+                            />
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Featured Ranking */}
             <section className="space-y-3">
