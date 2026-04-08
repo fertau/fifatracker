@@ -10,12 +10,13 @@ import {
     arrayUnion
 } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
-import type { Player, Match, AuditLogEntry, Tournament } from '../types';
+import type { Player, Match, AuditLogEntry, Tournament, PlayerGroup } from '../types';
 
 interface DataContextType {
     players: Player[];
     matches: Match[];
     tournaments: Tournament[];
+    groups: PlayerGroup[];
     loading: boolean;
     addMatch: (match: Match) => Promise<void>;
     updateMatch: (oldMatch: Match, updatedMatch: Match, audit: AuditLogEntry) => Promise<void>;
@@ -33,6 +34,9 @@ interface DataContextType {
     addTournament: (name: string, type: 'league' | 'knockout', participants: string[], createdBy: string) => Promise<Tournament>;
     updateTournament: (tournamentId: string, updates: Partial<Tournament>) => Promise<void>;
     deleteTournament: (tournamentId: string) => Promise<void>;
+    addGroup: (name: string, members: string[], createdBy: string) => Promise<PlayerGroup>;
+    updateGroup: (groupId: string, updates: Partial<PlayerGroup>) => Promise<void>;
+    deleteGroup: (groupId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -41,6 +45,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const [players, setPlayers] = useState<Player[]>([]);
     const [matches, setMatches] = useState<Match[]>([]);
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
+    const [groups, setGroups] = useState<PlayerGroup[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Initial Load & Realtime Sync
@@ -48,9 +53,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         let playersLoaded = false;
         let matchesLoaded = false;
         let tournamentsLoaded = false;
+        let groupsLoaded = false;
 
         const checkLoading = () => {
-            if (playersLoaded && matchesLoaded && tournamentsLoaded) {
+            if (playersLoaded && matchesLoaded && tournamentsLoaded && groupsLoaded) {
                 setLoading(false);
             }
         };
@@ -76,10 +82,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             checkLoading();
         });
 
+        const unsubscribeGroups = onSnapshot(collection(db, 'groups'), (snapshot) => {
+            const loadedGroups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PlayerGroup));
+            setGroups(loadedGroups);
+            groupsLoaded = true;
+            checkLoading();
+        });
+
         return () => {
             unsubscribePlayers();
             unsubscribeMatches();
             unsubscribeTournaments();
+            unsubscribeGroups();
         };
     }, []);
 
@@ -380,11 +394,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const addGroup = async (name: string, members: string[], createdBy: string) => {
+        try {
+            const rawGroup = {
+                name,
+                members,
+                createdBy,
+                createdAt: Date.now()
+            };
+            const cleanedGroup = cleanData(rawGroup);
+            const docRef = await addDoc(collection(db, 'groups'), cleanedGroup);
+            return { id: docRef.id, ...cleanedGroup } as PlayerGroup;
+        } catch (error) {
+            console.error('❌ Error creating group:', error);
+            throw error;
+        }
+    };
+
+    const updateGroup = async (groupId: string, updates: Partial<PlayerGroup>) => {
+        try {
+            const groupRef = doc(db, 'groups', groupId);
+            const cleanedUpdates = cleanData(updates);
+            await updateDoc(groupRef, cleanedUpdates);
+        } catch (error) {
+            console.error('❌ Error updating group:', error);
+            throw error;
+        }
+    };
+
+    const deleteGroup = async (groupId: string) => {
+        try {
+            await deleteDoc(doc(db, 'groups', groupId));
+        } catch (error) {
+            console.error('❌ Error deleting group:', error);
+            throw error;
+        }
+    };
+
     return (
         <DataContext.Provider value={{
             players,
             matches,
             tournaments,
+            groups,
             loading,
             addMatch,
             updateMatch,
@@ -401,7 +453,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             recalculateAllStats,
             addTournament,
             updateTournament,
-            deleteTournament
+            deleteTournament,
+            addGroup,
+            updateGroup,
+            deleteGroup
         }}>
             {children}
         </DataContext.Provider>
